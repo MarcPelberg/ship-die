@@ -27,7 +27,10 @@ Log out and back in so the Docker group membership applies.
 Create `/opt/ship-die/.env` with production values:
 
 ```sh
-DATABASE_URL=postgres://shipdie:shipdie@postgres:5432/shipdie
+POSTGRES_USER=shipdie
+POSTGRES_PASSWORD=<strong-postgres-password>
+POSTGRES_DB=shipdie
+DATABASE_URL=postgres://shipdie:<same-strong-postgres-password>@postgres:5432/shipdie
 PORT=3000
 PUBLIC_BASE_URL=https://example.com
 ADMIN_TOKEN=<long-random-admin-token>
@@ -39,7 +42,7 @@ WHATSAPP_AUTH_DIR=.data/wa-auth
 SITE_DOMAIN=example.com
 ```
 
-Keep private secrets as placeholders until entering real production values on the server. Do not commit `.env`.
+`POSTGRES_PASSWORD` and the password inside `DATABASE_URL` must match. Keep private secrets as placeholders until entering real production values on the server. Do not commit `.env`.
 
 ## First Deploy
 
