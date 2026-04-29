@@ -81,7 +81,7 @@ This plan covers one working vertical slice instead of separate subsystem plans 
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/web/server.js",
+    "start": "node dist/src/web/server.js",
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
@@ -1608,7 +1608,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/db ./db
 COPY --from=build /app/scripts ./scripts
 EXPOSE 3000
-CMD ["node", "dist/web/server.js"]
+CMD ["node", "dist/src/web/server.js"]
 ```
 
 - [ ] **Step 2: Create `docker-compose.yml`**
@@ -1639,7 +1639,7 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
-    command: ["node", "dist/web/server.js"]
+    command: ["node", "dist/src/web/server.js"]
 
   worker:
     build: .
@@ -1648,7 +1648,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["sh", "-c", "while true; do node dist/worker/run-once.js; sleep 60; done"]
+    command: ["sh", "-c", "while true; do node dist/src/worker/run-once.js; sleep 60; done"]
 
   reader:
     build: .
@@ -1659,7 +1659,7 @@ services:
         condition: service_healthy
     volumes:
       - whatsapp-auth:/app/.data/wa-auth
-    command: ["node", "dist/ingest/baileys-reader.js"]
+    command: ["node", "dist/src/ingest/baileys-reader.js"]
 
   caddy:
     image: caddy:2-alpine
