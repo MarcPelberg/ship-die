@@ -19,4 +19,11 @@ describe("pii", () => {
     expect(stripPII(text)).toBe(text);
     expect(containsPII(text)).toBe(false);
   });
+
+  it("preserves numeric URL path IDs and does not treat them as PII", () => {
+    const text = "See https://github.com/org/repo/issues/123456789";
+
+    expect(stripPII(text)).toBe(text);
+    expect(containsPII(text)).toBe(false);
+  });
 });
