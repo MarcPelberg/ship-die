@@ -1,0 +1,26 @@
+[
+  {
+    "externalId": "sample-001",
+    "groupId": "ship-die-sample",
+    "occurredAt": "2026-04-29T19:08:00.000Z",
+    "text": "Here are two frameworks we discussed today: https://github.com/gastownhall/beads https://github.com/obra/superpowers"
+  },
+  {
+    "externalId": "sample-002",
+    "groupId": "ship-die-sample",
+    "occurredAt": "2026-04-29T19:12:00.000Z",
+    "text": "GPT 5.5 feels like the strongest overall coding model right now compared with Opus 4.6 and 4.7."
+  },
+  {
+    "externalId": "sample-003",
+    "groupId": "ship-die-sample",
+    "occurredAt": "2026-04-29T19:24:00.000Z",
+    "text": "https://github.com/garrytan/gstack"
+  },
+  {
+    "externalId": "sample-004",
+    "groupId": "ship-die-sample",
+    "occurredAt": "2026-04-29T19:27:00.000Z",
+    "text": "https://github.com/nyldn/claude-octopus"
+  }
+]

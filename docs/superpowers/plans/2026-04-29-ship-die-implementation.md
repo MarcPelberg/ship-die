@@ -81,27 +81,30 @@ This plan covers one working vertical slice instead of separate subsystem plans 
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/web/server.js",
+    "start": "node dist/src/web/server.js",
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
-    "@hono/node-server": "latest",
-    "baileys": "latest",
-    "cheerio": "latest",
-    "dotenv": "latest",
-    "hono": "latest",
-    "openai": "latest",
-    "pg": "latest",
-    "pino": "latest",
-    "qrcode-terminal": "latest",
-    "zod": "latest"
+    "@hono/node-server": "2.0.0",
+    "baileys": "7.0.0-rc.9",
+    "cheerio": "1.2.0",
+    "dotenv": "17.4.2",
+    "hono": "4.12.15",
+    "openai": "6.35.0",
+    "pg": "8.20.0",
+    "pino": "10.3.1",
+    "qrcode-terminal": "0.12.0",
+    "zod": "4.3.6"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/pg": "latest",
-    "tsx": "latest",
-    "typescript": "latest",
-    "vitest": "latest"
+    "@types/node": "24.12.2",
+    "@types/pg": "8.20.0",
+    "tsx": "4.21.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  },
+  "overrides": {
+    "libsignal": "npm:libsignal@2.0.1"
   }
 }
 ```
@@ -194,7 +197,7 @@ describe("parseEnv", () => {
       DATABASE_URL: "postgres://user:pass@localhost:5432/db",
       PORT: "3001",
       PUBLIC_BASE_URL: "http://localhost:3001",
-      ADMIN_TOKEN: "secret",
+      ADMIN_TOKEN: "secret-token",
       DEEPSEEK_API_KEY: "ds-key",
       DEEPSEEK_MODEL: "deepseek-v4-flash",
       DEEPSEEK_STRONG_MODEL: "deepseek-v4-pro",
@@ -229,7 +232,7 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3000),
   PUBLIC_BASE_URL: z.string().url().default("http://localhost:3000"),
-  ADMIN_TOKEN: z.string().min(8).default("local-development-token"),
+  ADMIN_TOKEN: z.string().min(8),
   DEEPSEEK_API_KEY: z.string().default(""),
   DEEPSEEK_MODEL: z.string().default("deepseek-v4-flash"),
   DEEPSEEK_STRONG_MODEL: z.string().default("deepseek-v4-pro"),
@@ -1608,7 +1611,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/db ./db
 COPY --from=build /app/scripts ./scripts
 EXPOSE 3000
-CMD ["node", "dist/web/server.js"]
+CMD ["node", "dist/src/web/server.js"]
 ```
 
 - [ ] **Step 2: Create `docker-compose.yml`**
@@ -1639,7 +1642,7 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
-    command: ["node", "dist/web/server.js"]
+    command: ["node", "dist/src/web/server.js"]
 
   worker:
     build: .
@@ -1648,7 +1651,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["sh", "-c", "while true; do node dist/worker/run-once.js; sleep 60; done"]
+    command: ["sh", "-c", "while true; do node dist/src/worker/run-once.js; sleep 60; done"]
 
   reader:
     build: .
@@ -1659,7 +1662,7 @@ services:
         condition: service_healthy
     volumes:
       - whatsapp-auth:/app/.data/wa-auth
-    command: ["node", "dist/ingest/baileys-reader.js"]
+    command: ["node", "dist/src/ingest/baileys-reader.js"]
 
   caddy:
     image: caddy:2-alpine
@@ -1727,7 +1730,7 @@ Create `.env` on the server:
 DATABASE_URL=postgres://shipdie:shipdie@postgres:5432/shipdie
 PORT=3000
 PUBLIC_BASE_URL=https://ship-die.local
-ADMIN_TOKEN=local-development-token
+ADMIN_TOKEN=replace-with-strong-admin-token
 DEEPSEEK_API_KEY=deepseek-key-loaded-on-server
 DEEPSEEK_MODEL=deepseek-v4-flash
 DEEPSEEK_STRONG_MODEL=deepseek-v4-pro
