@@ -1,4 +1,5 @@
 import type { CardDraft, LinkMetadata, RawMessageInput } from "../domain/types.js";
+import { sanitizePublicCardDraft } from "../domain/public-card.js";
 import { stripPII } from "../domain/pii.js";
 import { isNoiseMessage } from "../domain/noise.js";
 import { canonicalizeUrl, extractUrls } from "../domain/urls.js";
@@ -73,7 +74,7 @@ export async function processMessage(input: ProcessMessageInput): Promise<Proces
     return { status: "rejected", reason };
   }
 
-  await repo.publishCard(draft, message);
+  await repo.publishCard(sanitizePublicCardDraft(draft), message);
   await repo.markProcessed(message.externalId);
   return { status: "published" };
 }

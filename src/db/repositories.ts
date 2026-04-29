@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { CardDraft, RawMessageInput } from "../domain/types.js";
+import { sanitizePublicCardDraft } from "../domain/public-card.js";
 import { domainFromUrl, extractUrls } from "../domain/urls.js";
 import type { PipelineEvent, PipelineRepo } from "../pipeline/process-message.js";
 import type { Db } from "./client.js";
@@ -52,6 +53,7 @@ export class Repositories implements PipelineRepo {
   }
 
   async publishCard(card: CardDraft, message: RawMessageInput): Promise<void> {
+    const publicCard = sanitizePublicCardDraft(card);
     await this.db.query(
       `with upserted_card as (
          insert into cards (
@@ -84,16 +86,16 @@ export class Repositories implements PipelineRepo {
        join raw_messages on raw_messages.external_id = $12
        on conflict do nothing`,
       [
-        slugify(card.title),
-        card.title,
-        card.summary,
-        card.canonicalType,
-        card.tags,
-        card.sourceUrl ?? null,
-        domainFromUrl(card.sourceUrl) ?? null,
-        card.sourceNote,
+        buildCardSlug(publicCard, message),
+        publicCard.title,
+        publicCard.summary,
+        publicCard.canonicalType,
+        publicCard.tags,
+        publicCard.sourceUrl ?? null,
+        domainFromUrl(publicCard.sourceUrl) ?? null,
+        publicCard.sourceNote,
         message.occurredAt,
-        card.confidence,
+        publicCard.confidence,
         JSON.stringify({ generatedBy: "deepseek" }),
         message.externalId
       ]
@@ -127,6 +129,11 @@ export class Repositories implements PipelineRepo {
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function buildCardSlug(card: CardDraft, message: RawMessageInput): string {
+  const identity = [message.externalId, card.sourceUrl ?? "", card.title].join("|");
+  return `${slugify(card.title)}-${sha256(identity).slice(0, 12)}`;
 }
 
 function slugify(value: string): string {
