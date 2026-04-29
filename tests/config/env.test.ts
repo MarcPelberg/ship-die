@@ -48,6 +48,18 @@ describe("parseEnv", () => {
     expect(() => parseEnv({})).toThrow(/DATABASE_URL/);
   });
 
+  it("rejects a missing admin token when database url is present", async () => {
+    stubRequiredEnv();
+
+    const { parseEnv } = await import("../../src/config/env.js");
+
+    expect(() =>
+      parseEnv({
+        DATABASE_URL: "postgres://user:pass@localhost:5432/db"
+      })
+    ).toThrow(/ADMIN_TOKEN/);
+  });
+
   it("exports env parsed from process.env", async () => {
     stubRequiredEnv();
 

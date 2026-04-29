@@ -5,7 +5,7 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3000),
   PUBLIC_BASE_URL: z.string().url().default("http://localhost:3000"),
-  ADMIN_TOKEN: z.string().min(8).default("local-development-token"),
+  ADMIN_TOKEN: z.string().min(8),
   DEEPSEEK_API_KEY: z.string().default(""),
   DEEPSEEK_MODEL: z.string().default("deepseek-v4-flash"),
   DEEPSEEK_STRONG_MODEL: z.string().default("deepseek-v4-pro"),

@@ -197,7 +197,7 @@ describe("parseEnv", () => {
       DATABASE_URL: "postgres://user:pass@localhost:5432/db",
       PORT: "3001",
       PUBLIC_BASE_URL: "http://localhost:3001",
-      ADMIN_TOKEN: "secret",
+      ADMIN_TOKEN: "secret-token",
       DEEPSEEK_API_KEY: "ds-key",
       DEEPSEEK_MODEL: "deepseek-v4-flash",
       DEEPSEEK_STRONG_MODEL: "deepseek-v4-pro",
@@ -232,7 +232,7 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3000),
   PUBLIC_BASE_URL: z.string().url().default("http://localhost:3000"),
-  ADMIN_TOKEN: z.string().min(8).default("local-development-token"),
+  ADMIN_TOKEN: z.string().min(8),
   DEEPSEEK_API_KEY: z.string().default(""),
   DEEPSEEK_MODEL: z.string().default("deepseek-v4-flash"),
   DEEPSEEK_STRONG_MODEL: z.string().default("deepseek-v4-pro"),
@@ -1730,7 +1730,7 @@ Create `.env` on the server:
 DATABASE_URL=postgres://shipdie:shipdie@postgres:5432/shipdie
 PORT=3000
 PUBLIC_BASE_URL=https://ship-die.local
-ADMIN_TOKEN=local-development-token
+ADMIN_TOKEN=replace-with-strong-admin-token
 DEEPSEEK_API_KEY=deepseek-key-loaded-on-server
 DEEPSEEK_MODEL=deepseek-v4-flash
 DEEPSEEK_STRONG_MODEL=deepseek-v4-pro
