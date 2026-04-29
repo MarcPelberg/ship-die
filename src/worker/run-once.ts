@@ -6,8 +6,8 @@ import { fetchLinkMetadata } from "../metadata/fetch.js";
 import { processMessage } from "../pipeline/process-message.js";
 
 async function main(): Promise<void> {
-  if (!env.whatsappGroupJid) {
-    throw new Error("WHATSAPP_GROUP_JID is required for the WhatsApp reader");
+  if (!env.deepseekApiKey) {
+    throw new Error("DEEPSEEK_API_KEY is required for the worker");
   }
 
   const db = createDb();
