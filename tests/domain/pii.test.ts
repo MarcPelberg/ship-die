@@ -7,4 +7,9 @@ describe("pii", () => {
     expect(cleaned).toBe("Email me at [email] or [phone]");
     expect(containsPII(cleaned)).toBe(false);
   });
+
+  it("preserves ISO-like dates while stripping phone numbers", () => {
+    expect(stripPII("Released on 2026-04-29")).toBe("Released on 2026-04-29");
+    expect(stripPII("Call +52 1 998 345 1651")).toBe("Call [phone]");
+  });
 });

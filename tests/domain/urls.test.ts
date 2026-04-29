@@ -8,4 +8,11 @@ describe("urls", () => {
     ]);
     expect(canonicalizeUrl("https://github.com/garrytan/gstack/?utm_source=x")).toBe("https://github.com/garrytan/gstack");
   });
+
+  it("trims sentence punctuation from extracted urls", () => {
+    expect(extractUrls("see https://github.com/foo/bar, and https://example.com/x.")).toEqual([
+      "https://github.com/foo/bar",
+      "https://example.com/x"
+    ]);
+  });
 });

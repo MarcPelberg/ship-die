@@ -7,4 +7,9 @@ describe("noise detection", () => {
     expect(isNoiseMessage("Thank you")).toBe(true);
     expect(isNoiseMessage("https://github.com/gastownhall/beads")).toBe(false);
   });
+
+  it("keeps click to view messages that contain links", () => {
+    expect(isNoiseMessage("click to view https://github.com/gastownhall/beads")).toBe(false);
+    expect(isNoiseMessage("You changed the group description. Click to view.")).toBe(true);
+  });
 });
