@@ -26,6 +26,9 @@ export async function fetchLinkMetadata(url: string, fetchImpl: typeof fetch = f
     headers: { "user-agent": "ShipDieBot/0.1 (+https://ship-die.local)" },
     redirect: "follow",
   });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch metadata (${response.status}) for ${response.url || url}`);
+  }
   const html = await response.text();
   return extractMetadataFromHtml(response.url || url, html);
 }

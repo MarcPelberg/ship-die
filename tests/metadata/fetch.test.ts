@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractMetadataFromHtml } from "../../src/metadata/fetch.js";
+import { extractMetadataFromHtml, fetchLinkMetadata } from "../../src/metadata/fetch.js";
 
 describe("extractMetadataFromHtml", () => {
   it("uses Open Graph metadata when available", () => {
@@ -21,5 +21,21 @@ describe("extractMetadataFromHtml", () => {
       description: "Does useful agent work",
       siteName: "GitHub",
     });
+  });
+});
+
+describe("fetchLinkMetadata", () => {
+  it("throws for non-OK HTTP responses", async () => {
+    const fetchImpl: typeof fetch = async () =>
+      ({
+        ok: false,
+        status: 404,
+        url: "https://example.test/missing",
+        text: async () => "<html><head><title>Missing</title></head></html>",
+      }) as Response;
+
+    await expect(fetchLinkMetadata("https://example.test/missing", fetchImpl)).rejects.toThrow(
+      "Failed to fetch metadata (404) for https://example.test/missing",
+    );
   });
 });
