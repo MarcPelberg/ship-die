@@ -20,6 +20,17 @@ async function main(): Promise<void> {
 
   const db = createDb();
   const repo = new Repositories(db);
+  let shutdownStarted = false;
+  async function shutdown(exitCode: number): Promise<void> {
+    if (shutdownStarted) return;
+    shutdownStarted = true;
+    try {
+      await closeDb(db);
+    } finally {
+      process.exit(exitCode);
+    }
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState(env.whatsappAuthDir);
   const sock = makeWASocket({
     auth: state,
@@ -32,12 +43,20 @@ async function main(): Promise<void> {
   sock.ev.on("connection.update", (update) => {
     const code = (update.lastDisconnect?.error as any)?.output?.statusCode;
     console.log("whatsapp connection", { connection: update.connection, qr: Boolean(update.qr), code });
-    if (update.connection === "close" && code !== DisconnectReason.loggedOut) {
-      console.log("connection closed; restart the reader process to reconnect");
+    if (update.connection === "close") {
+      const exitCode = code === DisconnectReason.loggedOut ? 0 : 1;
+      if (exitCode === 1) {
+        console.log("connection closed; exiting so a supervisor can restart the reader");
+      } else {
+        console.log("logged out; exiting the reader");
+      }
+      void shutdown(exitCode);
     }
   });
 
-  sock.ev.on("messages.upsert", async ({ messages }) => {
+  sock.ev.on("messages.upsert", async ({ type, messages }) => {
+    if (type !== "notify") return;
+
     for (const item of messages) {
       if (item.key.remoteJid !== env.whatsappGroupJid) continue;
       const text = messageText(item.message);
@@ -56,8 +75,7 @@ async function main(): Promise<void> {
   });
 
   process.on("SIGINT", async () => {
-    await closeDb(db);
-    process.exit(0);
+    await shutdown(0);
   });
 }
 
