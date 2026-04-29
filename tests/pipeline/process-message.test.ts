@@ -131,4 +131,34 @@ describe("Repositories", () => {
     expect(persistedFields).not.toContain("alice@example.com");
     expect(persistedFields).not.toContain("555 111 2222");
   });
+
+  it("removes private query data from persisted source urls", async () => {
+    const db = { query: vi.fn().mockResolvedValue({ rows: [] }) };
+    const repo = new Repositories(db as unknown as Db);
+
+    await repo.publishCard(
+      {
+        title: "Private URL",
+        summary: "Useful public page with private tracking query.",
+        canonicalType: "tool",
+        tags: ["privacy"],
+        sourceUrl: "https://example.com/tool?email=alice@example.com&phone=15551112222#alice@example.com",
+        sourceNote: "github repo",
+        confidence: 0.9,
+        shouldPublish: true
+      },
+      {
+        externalId: "external-message-456",
+        groupId: "g",
+        occurredAt: new Date("2026-04-29T12:00:00Z"),
+        text: "https://example.com/tool?email=alice@example.com&phone=15551112222"
+      }
+    );
+
+    const params = db.query.mock.calls[0][1];
+
+    expect(params[5]).toBe("https://example.com/tool");
+    expect(JSON.stringify(params)).not.toContain("alice@example.com");
+    expect(JSON.stringify(params)).not.toContain("15551112222");
+  });
 });
