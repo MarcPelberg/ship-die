@@ -62,3 +62,4 @@ create index if not exists idx_raw_messages_processed on raw_messages(processed_
 create index if not exists idx_cards_published_at on cards(published_at desc);
 create index if not exists idx_cards_type on cards(canonical_type);
 create index if not exists idx_cards_search on cards using gin(search_vector);
+create unique index if not exists idx_cards_source_url_unique on cards(source_url) where source_url is not null;
