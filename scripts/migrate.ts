@@ -12,15 +12,20 @@ async function main() {
       const existing = await db.query("select 1 from schema_migrations where name = $1", [file]);
       if (existing.rowCount) continue;
       const sql = await readFile(path.join(dir, file), "utf8");
-      await db.query("begin");
-      await db.query(sql);
-      await db.query("insert into schema_migrations (name) values ($1)", [file]);
-      await db.query("commit");
-      console.log(`applied ${file}`);
+      const client = await db.connect();
+      try {
+        await client.query("begin");
+        await client.query(sql);
+        await client.query("insert into schema_migrations (name) values ($1)", [file]);
+        await client.query("commit");
+        console.log(`applied ${file}`);
+      } catch (error) {
+        await client.query("rollback").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
     }
-  } catch (error) {
-    await db.query("rollback").catch(() => undefined);
-    throw error;
   } finally {
     await closeDb(db);
   }
