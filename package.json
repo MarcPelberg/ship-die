@@ -29,10 +29,13 @@
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@types/node": "25.6.0",
+    "@types/node": "24.12.2",
     "@types/pg": "8.20.0",
     "tsx": "4.21.0",
     "typescript": "6.0.3",
     "vitest": "4.1.5"
+  },
+  "overrides": {
+    "libsignal": "npm:libsignal@2.0.1"
   }
 }
