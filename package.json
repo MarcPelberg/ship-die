@@ -1,0 +1,38 @@
+{
+  "name": "ship-die",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/web/server.ts",
+    "reader": "tsx src/ingest/baileys-reader.ts",
+    "ingest:fixture": "tsx src/ingest/fixture-reader.ts fixtures/sample-chat.json",
+    "worker": "tsx src/worker/run-once.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/web/server.js",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "latest",
+    "baileys": "latest",
+    "cheerio": "latest",
+    "dotenv": "latest",
+    "hono": "latest",
+    "openai": "latest",
+    "pg": "latest",
+    "pino": "latest",
+    "qrcode-terminal": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/pg": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
