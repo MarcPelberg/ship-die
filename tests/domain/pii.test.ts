@@ -12,4 +12,11 @@ describe("pii", () => {
     expect(stripPII("Released on 2026-04-29")).toBe("Released on 2026-04-29");
     expect(stripPII("Call +52 1 998 345 1651")).toBe("Call [phone]");
   });
+
+  it("preserves date-times and does not treat them as PII", () => {
+    const text = "Released 2026-04-29 10:30";
+
+    expect(stripPII(text)).toBe(text);
+    expect(containsPII(text)).toBe(false);
+  });
 });
