@@ -19,7 +19,10 @@ type CardRow = {
 type LatestRawMessageRow = {
   external_id: string;
   occurred_at: Date;
-  text: string;
+};
+
+export type AdminStatusDb = {
+  query<T>(sql: string): Promise<{ rows: T[] }>;
 };
 
 const db = createDb();
@@ -65,11 +68,24 @@ app.get("/admin", async (c) => {
     return c.notFound();
   }
 
+  return c.json(await buildAdminStatus(db));
+});
+
+if (process.env.NODE_ENV !== "test") {
+  serve({ fetch: app.fetch, port: env.port });
+  console.log(`Ship != Die listening on http://localhost:${env.port}`);
+}
+
+export async function buildAdminStatus(statusDb: AdminStatusDb): Promise<{
+  cards: number;
+  pendingMessages: number;
+  latestRawMessage: { externalId: string; occurredAt: string } | null;
+}> {
   const [cards, pendingMessages, latestRawMessage] = await Promise.all([
-    db.query<{ count: string }>("select count(*) from cards"),
-    db.query<{ count: string }>("select count(*) from raw_messages where processed_at is null"),
-    db.query<LatestRawMessageRow>(
-      `select external_id, occurred_at, text
+    statusDb.query<{ count: string }>("select count(*) from cards"),
+    statusDb.query<{ count: string }>("select count(*) from raw_messages where processed_at is null"),
+    statusDb.query<LatestRawMessageRow>(
+      `select external_id, occurred_at
        from raw_messages
        order by occurred_at desc
        limit 1`
@@ -77,21 +93,17 @@ app.get("/admin", async (c) => {
   ]);
 
   const latest = latestRawMessage.rows[0];
-  return c.json({
+  return {
     cards: Number(cards.rows[0]?.count ?? 0),
     pendingMessages: Number(pendingMessages.rows[0]?.count ?? 0),
     latestRawMessage: latest
       ? {
           externalId: latest.external_id,
-          occurredAt: latest.occurred_at.toISOString(),
-          text: latest.text
+          occurredAt: latest.occurred_at.toISOString()
         }
       : null
-  });
-});
-
-serve({ fetch: app.fetch, port: env.port });
-console.log(`Ship != Die listening on http://localhost:${env.port}`);
+  };
+}
 
 function toPublicCard(row: CardRow): PublicCard {
   return {
