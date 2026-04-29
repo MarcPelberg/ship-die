@@ -40,5 +40,4 @@ export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
   };
 }
 
-export const env =
-  process.env.NODE_ENV === "test" ? ({} as AppEnv) : parseEnv(process.env);
+export const env = parseEnv(process.env);
