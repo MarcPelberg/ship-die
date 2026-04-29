@@ -31,7 +31,7 @@ The public site never exposes raw WhatsApp messages, names, phone numbers, email
 
 ## Ingestion
 
-Use a dedicated WhatsApp account when possible, preferably the expendable Mexican account the user mentioned. Invite that account into the group and keep it logged in as a linked device.
+Use the dedicated Mexican WhatsApp account as the reader. Invite that account into the group and keep it logged in as a linked device. The user's personal WhatsApp account should be treated only as an emergency fallback.
 
 The ingestion layer should be adapter-based because unofficial WhatsApp automation is brittle. The first implementation can use a WhatsApp Web-compatible library or automation approach, but the rest of the system should depend on an internal interface, not directly on one vendor/library.
 
@@ -164,7 +164,7 @@ Recommended v1 stack:
 - Scheduled backups.
 - Healthcheck route and smoke test.
 
-The LLM provider should be swappable. The design should not hard-code OpenAI, Anthropic, DeepSeek, or any other provider as a permanent dependency.
+Use DeepSeek as the initial LLM provider. Keep the provider interface swappable so another provider can be used later without changing the publishing pipeline.
 
 Use a provider interface for:
 
@@ -174,7 +174,7 @@ Use a provider interface for:
 - Classification.
 - Optional link summarization.
 
-Provider choice can be finalized during implementation based on cost, quality, and available keys.
+The initial DeepSeek integration should use DeepSeek's OpenAI-compatible API at `https://api.deepseek.com` with current model names from the official docs. As of April 29, 2026, DeepSeek lists `deepseek-v4-flash` and `deepseek-v4-pro`, while older `deepseek-chat` and `deepseek-reasoner` names are compatibility aliases scheduled for future deprecation. Use structured JSON output for classifier/card generation where possible, and validate the JSON before publishing.
 
 ## Reliability Risks
 
