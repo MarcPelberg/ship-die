@@ -49,6 +49,9 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    env_file:
+      - path: .env
+        required: false
     depends_on:
       - app
     ports:
