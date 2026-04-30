@@ -1,3 +1,7 @@
+{
+  default_sni {$SITE_DOMAIN}
+}
+
 {$SITE_DOMAIN} {
   encode gzip
   tls {
