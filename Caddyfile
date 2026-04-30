@@ -1,4 +1,9 @@
 {$SITE_DOMAIN} {
   encode gzip
+  tls {
+    issuer acme {
+      profile shortlived
+    }
+  }
   reverse_proxy app:3000
 }
