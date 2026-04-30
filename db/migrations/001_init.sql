@@ -27,14 +27,29 @@ create table if not exists cards (
   published_at timestamptz not null default now(),
   confidence numeric not null default 0,
   metadata jsonb not null default '{}'::jsonb,
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
-    setweight(to_tsvector('english', coalesce(summary, '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(canonical_type, '')), 'C') ||
-    setweight(to_tsvector('english', coalesce(array_to_string(tags, ' '), '')), 'C') ||
-    setweight(to_tsvector('simple', coalesce(source_url, '')), 'D')
-  ) stored
+  search_vector tsvector not null default ''::tsvector
 );
+
+create or replace function update_cards_search_vector()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('english', coalesce(new.title, '')), 'A') ||
+    setweight(to_tsvector('english', coalesce(new.summary, '')), 'B') ||
+    setweight(to_tsvector('english', coalesce(new.canonical_type, '')), 'C') ||
+    setweight(to_tsvector('english', coalesce(array_to_string(new.tags, ' '), '')), 'C') ||
+    setweight(to_tsvector('simple', coalesce(new.source_url, '')), 'D');
+  return new;
+end;
+$$;
+
+drop trigger if exists cards_search_vector_before_write on cards;
+create trigger cards_search_vector_before_write
+before insert or update of title, summary, canonical_type, tags, source_url on cards
+for each row
+execute function update_cards_search_vector();
 
 create table if not exists card_sources (
   card_id uuid not null references cards(id) on delete cascade,
