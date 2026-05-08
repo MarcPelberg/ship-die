@@ -13,6 +13,7 @@ type CardRow = {
   tags: string[];
   source_url: string | null;
   source_note: string;
+  discovered_at: Date;
   published_at: Date;
 };
 
@@ -46,10 +47,10 @@ app.get("/", async (c) => {
 
   const where = filters.length > 0 ? `where ${filters.join(" and ")}` : "";
   const result = await db.query<CardRow>(
-    `select title, summary, canonical_type, tags, source_url, source_note, published_at
+    `select title, summary, canonical_type, tags, source_url, source_note, discovered_at, published_at
      from cards
      ${where}
-     order by published_at desc
+     order by discovered_at desc, published_at desc
      limit 100`,
     values
   );
@@ -105,7 +106,7 @@ export async function buildAdminStatus(statusDb: AdminStatusDb): Promise<{
   };
 }
 
-function toPublicCard(row: CardRow): PublicCard {
+export function toPublicCard(row: CardRow): PublicCard {
   return {
     title: row.title,
     summary: row.summary,
@@ -113,6 +114,6 @@ function toPublicCard(row: CardRow): PublicCard {
     tags: row.tags,
     sourceUrl: row.source_url ?? undefined,
     sourceNote: row.source_note,
-    publishedAt: row.published_at
+    publishedAt: row.discovered_at
   };
 }
