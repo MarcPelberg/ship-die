@@ -2,20 +2,23 @@ import { env } from "../config/env.js";
 import { createDb, closeDb } from "../db/client.js";
 import { Repositories } from "../db/repositories.js";
 import { DeepSeekProvider } from "../llm/deepseek.js";
+import { LocalFallbackProvider } from "../llm/local-fallback.js";
 import { fetchLinkMetadata } from "../metadata/fetch.js";
 import { processMessage } from "../pipeline/process-message.js";
 
 async function main(): Promise<void> {
-  if (!env.deepseekApiKey) {
-    throw new Error("DEEPSEEK_API_KEY is required for the worker");
-  }
-
   const db = createDb();
   const repo = new Repositories(db);
-  const provider = new DeepSeekProvider({
-    apiKey: env.deepseekApiKey,
-    model: env.deepseekModel
-  });
+  const provider = env.deepseekApiKey
+    ? new DeepSeekProvider({
+        apiKey: env.deepseekApiKey,
+        model: env.deepseekModel
+      })
+    : new LocalFallbackProvider();
+
+  if (!env.deepseekApiKey) {
+    console.warn("DEEPSEEK_API_KEY missing; using local fallback provider for curation");
+  }
 
   try {
     const messages = await repo.pendingRawMessages(25);

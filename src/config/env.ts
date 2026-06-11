@@ -10,7 +10,8 @@ const EnvSchema = z.object({
   DEEPSEEK_MODEL: z.string().default("deepseek-v4-flash"),
   DEEPSEEK_STRONG_MODEL: z.string().default("deepseek-v4-pro"),
   WHATSAPP_GROUP_JID: z.string().default(""),
-  WHATSAPP_AUTH_DIR: z.string().default(".data/wa-auth")
+  WHATSAPP_AUTH_DIR: z.string().default(".data/wa-auth"),
+  WHATSAPP_PAIR_PHONE: z.string().default("")
 });
 
 export type AppEnv = {
@@ -23,6 +24,7 @@ export type AppEnv = {
   deepseekStrongModel: string;
   whatsappGroupJid: string;
   whatsappAuthDir: string;
+  whatsappPairPhone: string;
 };
 
 export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
@@ -36,7 +38,8 @@ export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
     deepseekModel: parsed.DEEPSEEK_MODEL,
     deepseekStrongModel: parsed.DEEPSEEK_STRONG_MODEL,
     whatsappGroupJid: parsed.WHATSAPP_GROUP_JID,
-    whatsappAuthDir: parsed.WHATSAPP_AUTH_DIR
+    whatsappAuthDir: parsed.WHATSAPP_AUTH_DIR,
+    whatsappPairPhone: parsed.WHATSAPP_PAIR_PHONE
   };
 }
 
