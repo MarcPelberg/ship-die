@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-shipdie}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
@@ -15,6 +16,7 @@ services:
 
   app:
     build: .
+    restart: unless-stopped
     env_file:
       - path: .env
         required: false
@@ -27,6 +29,7 @@ services:
 
   worker:
     build: .
+    restart: unless-stopped
     env_file:
       - path: .env
         required: false
@@ -37,6 +40,7 @@ services:
 
   reader:
     build: .
+    restart: unless-stopped
     env_file:
       - path: .env
         required: false
@@ -49,6 +53,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    restart: unless-stopped
     env_file:
       - path: .env
         required: false
