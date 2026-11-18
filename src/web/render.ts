@@ -1,6 +1,8 @@
 import { CANONICAL_TYPES } from "../domain/taxonomy.js";
 import type { CanonicalType } from "../domain/types.js";
 
+export const PAGE_SIZE = 24;
+
 export type PublicCard = {
   title: string;
   summary: string;
@@ -15,235 +17,132 @@ export type RenderHomeInput = {
   query: string;
   type: string;
   cards: PublicCard[];
+  counts?: Partial<Record<CanonicalType, number>>;
+  page?: number;
+  unavailable?: boolean;
 };
 
-export function renderHome(input: RenderHomeInput): string {
-  const query = escapeHtml(input.query);
-  const selectedType = escapeHtml(input.type);
-  const cardsHtml = input.cards.length > 0
-    ? input.cards.map(renderCard).join("")
-    : `<section class="empty"><h2>No cards found</h2><p>Try a broader search.</p></section>`;
+const labels: Record<CanonicalType, string> = {
+  "agent harness": "Agent harnesses",
+  "skill/workflow pack": "Skills & workflows",
+  "memory/state": "Memory & state",
+  model: "Models",
+  "review/eval": "Reviews & evals",
+  tool: "Tools",
+  infra: "Infrastructure"
+};
+const glyphs: Record<CanonicalType | "all", string> = {
+  all: "M3 3h6v6H3z M13 3h6v6h-6z M3 13h6v6H3z M13 13h6v6h-6z",
+  "agent harness": "M5 5h12v12H5z M8 2v3m6-3v3m-6 12v3m6-3v3M2 8h3m-3 6h3M17 8h3m-3 6h3 M9 9h4v4H9z",
+  "skill/workflow pack": "M4 4h5v5H4z M13 13h5v5h-5z M9 6h6v7 M6 9v7h7",
+  "memory/state": "m2 7 9-5 9 5-9 5z M2 11l9 5 9-5 M2 15l9 5 9-5",
+  model: "m11 2 8 5v9l-8 5-8-5V7z M3 7l8 5 8-5 M11 12v9",
+  "review/eval": "M3 4h16v13H9l-4 4v-4H3z M7 10l3 3 5-6",
+  tool: "M7 4 2 10l5 6 M15 4l5 6-5 6 M13 3l-4 15",
+  infra: "M3 4h16v6H3z M3 13h16v6H3z M6 7h1 M6 16h1"
+};
+const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+const number = new Intl.NumberFormat("en-US");
 
+function icon(type: CanonicalType | "all"): string {
+  return `<svg class="topic-icon" aria-hidden="true" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="${glyphs[type]}"/></svg>`;
+}
+
+export function archiveUrl(query: string, type: string, page = 1): string {
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  if (type) params.set("type", type);
+  if (page > 1) params.set("page", String(page));
+  return params.size ? `/?${params}` : "/";
+}
+
+export function renderHome(input: RenderHomeInput): string {
+  const { query, type, cards, page = 1 } = input;
+  const counts = input.counts ?? cards.reduce<Partial<Record<CanonicalType, number>>>((result, card) => {
+    result[card.canonicalType] = (result[card.canonicalType] ?? 0) + 1;
+    return result;
+  }, {});
+  const all = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const total = type ? counts[type as CanonicalType] ?? 0 : all;
+  const topic = labels[type as CanonicalType];
+  const heading = query ? "Search results" : topic ?? "All resources";
+  const title = input.unavailable ? "Archive unavailable" : query ? `Results for “${query}”` : topic ?? "Resource index";
+  const topicLink = (value: CanonicalType | "") => {
+    const selected = value === type;
+    const count = value ? counts[value] ?? 0 : all;
+    return `<a href="${escapeHtml(archiveUrl(query, value))}"${selected ? ' aria-current="page"' : ""}>
+      ${icon(value || "all")}<span>${value ? escapeHtml(labels[value]) : "All resources"}</span>
+      ${input.unavailable ? "" : `<span class="topic-count">${number.format(count)}</span>`}</a>`;
+  };
+  let list: string;
+  if (input.unavailable) {
+    list = `<div class="empty"><h3>The archive is unavailable</h3><p>Try loading these results again.</p><a href="${escapeHtml(archiveUrl(query, type, page))}">Try again</a></div>`;
+  } else if (!cards.length) {
+    list = query || type
+      ? '<div class="empty"><h3>No matching resources</h3><p>Try another keyword or browse every topic.</p><a href="/">Browse all resources</a></div>'
+      : '<div class="empty"><h3>No resources yet</h3><p>Published entries will appear here.</p></div>';
+  } else {
+    list = cards.map(renderCard).join("");
+  }
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const pager = (n: number, label: string) => `<a href="${escapeHtml(archiveUrl(query, type, n))}#results">${label}</a>`;
+  const status = total > PAGE_SIZE
+    ? `${number.format((page - 1) * PAGE_SIZE + 1)}–${number.format(Math.min(page * PAGE_SIZE, total))} of ${number.format(total)} resources`
+    : `${number.format(total)} resource${total === 1 ? "" : "s"}`;
   return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ship != Die</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #161616;
-      --muted: #606060;
-      --line: #d8d8d8;
-      --paper: #f7f7f3;
-      --panel: #ffffff;
-      --accent: #0f766e;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 16px;
-      line-height: 1.5;
-    }
-    main {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 32px 0 56px;
-    }
-    header {
-      border-bottom: 2px solid var(--ink);
-      padding-bottom: 18px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 30px;
-      line-height: 1.1;
-      letter-spacing: 0;
-    }
-    .dek {
-      margin: 8px 0 0;
-      color: var(--muted);
-      max-width: 680px;
-    }
-    form {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 220px auto;
-      gap: 10px;
-      margin: 22px 0 14px;
-    }
-    input, select, button {
-      min-height: 42px;
-      border: 1px solid var(--ink);
-      border-radius: 4px;
-      background: var(--panel);
-      color: var(--ink);
-      font: inherit;
-      padding: 8px 10px;
-    }
-    button {
-      background: var(--ink);
-      color: white;
-      cursor: pointer;
-    }
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 0 0 18px;
-    }
-    .filter {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      color: var(--ink);
-      display: inline-flex;
-      padding: 5px 10px;
-      text-decoration: none;
-    }
-    .filter.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      font-weight: 700;
-    }
-    .status {
-      border-block: 1px solid var(--line);
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 10px 0;
-      margin-bottom: 12px;
-    }
-    .list {
-      display: grid;
-      gap: 10px;
-    }
-    article {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      display: grid;
-      grid-template-columns: 116px minmax(0, 1fr) 168px;
-      gap: 16px;
-      padding: 16px;
-    }
-    time, .type, .source, .tags {
-      color: var(--muted);
-      font-size: 14px;
-    }
-    h2 {
-      margin: 0 0 4px;
-      font-size: 20px;
-      line-height: 1.25;
-      letter-spacing: 0;
-    }
-    p {
-      margin: 0;
-    }
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
-    }
-    .tag {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 2px 7px;
-    }
-    .source {
-      overflow-wrap: anywhere;
-      text-align: right;
-    }
-    a {
-      color: var(--accent);
-    }
-    .empty {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 28px;
-    }
-    @media (max-width: 760px) {
-      main { width: min(100% - 24px, 1120px); padding-top: 22px; }
-      form { grid-template-columns: 1fr; }
-      .status { display: block; }
-      article { grid-template-columns: 1fr; gap: 8px; }
-      .source { text-align: left; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <header>
-      <h1>Ship != Die</h1>
-      <p class="dek">Raw cards for tools, workflows, models, infra, memory, and evals worth finding again.</p>
-    </header>
-    <form method="get" action="/">
-      <input type="search" name="q" value="${query}" placeholder="Search cards" aria-label="Search cards">
-      <select name="type" aria-label="Canonical type">
-        <option value=""${input.type === "" ? " selected" : ""}>All types</option>
-        ${CANONICAL_TYPES.map((type) => `<option value="${escapeHtml(type)}"${type === input.type ? " selected" : ""}>${escapeHtml(type)}</option>`).join("")}
-      </select>
-      <button type="submit">Search</button>
-    </form>
-    <nav class="filters" aria-label="Canonical type filters">
-      ${renderFilter("All", "", input.query, input.type === "")}
-      ${CANONICAL_TYPES.map((type) => renderFilter(type, type, input.query, type === input.type)).join("")}
-    </nav>
-    <section class="status" aria-label="Result status">
-      <span>${input.cards.length} card${input.cards.length === 1 ? "" : "s"}</span>
-      <span>query: ${query || "all"} / type: ${selectedType || "all"}</span>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)} · Ship != Die</title>
+<meta name="description" content="Search tools, models, and workflows shared in the /Ship!=Die builder group.">
+<link rel="preload" href="/archivo-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/archive.css"><script src="/archive.js" defer></script></head>
+<body><a class="skip" href="#results">Skip to resources</a>
+<header class="mast"><div class="frame mast-inner">
+  <a class="brand" href="/" aria-label="Ship != Die home"><span class="mark" aria-hidden="true">!=</span>Ship != Die</a>
+  <a class="repo" href="https://github.com/MarcPelberg/ship-die">GitHub <span aria-hidden="true">↗</span></a>
+</div></header>
+<main class="frame">
+  <div class="intro"><div><h1>Resource index</h1><p>Tools, models, and workflows shared in the <strong>/Ship!=Die</strong> builder group.</p></div>
+    <div class="index-mark" aria-hidden="true"><i></i><i></i><i><b>!=</b></i></div>
+  </div>
+  <form id="search" action="/" method="get" role="search" novalidate>
+    <label for="keyword" class="sr-only">Search the resource index</label><span class="magnifier" aria-hidden="true"></span>
+    <input id="keyword" type="search" name="q" value="${escapeHtml(query)}" placeholder="Search tools, models, workflows…" autocomplete="off">
+    ${type ? `<input type="hidden" name="type" value="${escapeHtml(type)}">` : ""}
+    <button class="clear" type="button" aria-label="Clear search" title="Clear search" hidden>×</button>
+    <button class="submit" type="submit">Search</button>
+  </form>
+  <span id="feedback" class="search-feedback" role="status"></span><span id="announcement" class="sr-only" role="status"></span>
+  <div id="catalog">
+    <nav class="topics" aria-label="Browse topics"><h2>Topics</h2><div class="topic-links">${topicLink("")}${CANONICAL_TYPES.map(topicLink).join("")}</div></nav>
+    <section class="resources" id="results" aria-labelledby="result-heading" tabindex="-1">
+      <div class="list-header"><div><h2 id="result-heading">${escapeHtml(heading)}</h2>
+      ${input.unavailable ? "" : `<p id="result-status">${escapeHtml(status)}${query ? ` for “${escapeHtml(query)}”` : ""}${query && topic ? ` in ${escapeHtml(topic)}` : ""}</p>`}</div>
+      ${cards.length ? `<span class="sort">${query ? "Best match" : "Newest first"}</span>` : ""}</div>
+      ${list}
+      ${pages > 1 ? `<nav class="pages" aria-label="Result pages">${page > 1 ? pager(page - 1, "← Previous") : ""}<span>Page ${number.format(page)} of ${number.format(pages)}</span>${page < pages ? pager(page + 1, "Next →") : ""}</nav>` : ""}
     </section>
-    <section class="list" aria-label="Cards">
-      ${cardsHtml}
-    </section>
-  </main>
-</body>
-</html>`;
+  </div>
+</main></body></html>`;
 }
 
 function renderCard(card: PublicCard): string {
-  const publishedDate = card.publishedAt.toISOString().slice(0, 10);
-  const source = card.sourceUrl
-    ? `<a href="${escapeHtml(card.sourceUrl)}" rel="nofollow noreferrer">${escapeHtml(card.sourceNote)}</a>`
-    : escapeHtml(card.sourceNote);
-  const tags = card.tags.length > 0
-    ? `<div class="tags">${card.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>`
-    : "";
-
+  let source: URL | undefined;
+  try {
+    const url = new URL(card.sourceUrl ?? "");
+    if (["https:", "http:"].includes(url.protocol) && !url.username && !url.password) source = url;
+  } catch { /* Entries without a public URL still carry their summary. */ }
+  const date = card.publishedAt.toISOString().slice(0, 10);
+  const title = escapeHtml(card.title);
   return `<article>
-  <time datetime="${publishedDate}">${publishedDate}</time>
-  <div>
-    <div class="type">${escapeHtml(card.canonicalType)}</div>
-    <h2>${escapeHtml(card.title)}</h2>
-    <p>${escapeHtml(card.summary)}</p>
-    ${tags}
-  </div>
-  <div class="source">${source}</div>
-</article>`;
-}
-
-function renderFilter(label: string, value: string, query: string, active: boolean): string {
-  const params = new URLSearchParams();
-  if (query) {
-    params.set("q", query);
-  }
-  if (value) {
-    params.set("type", value);
-  }
-  const href = params.size > 0 ? `/?${params.toString()}` : "/";
-  return `<a class="filter${active ? " active" : ""}" href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
+    <div class="meta"><span class="category">${icon(card.canonicalType)}${escapeHtml(labels[card.canonicalType])}</span><span class="dot" aria-hidden="true">·</span><time datetime="${date}">${dateFormat.format(card.publishedAt)}</time></div>
+    <h3>${source ? `<a href="${escapeHtml(source.href)}" rel="nofollow noreferrer">${title} <span class="out" aria-hidden="true">↗</span></a>` : title}</h3>
+    <p class="summary">${escapeHtml(card.summary)}</p>
+    <div class="details">${source || card.sourceNote ? `<span class="domain">${escapeHtml(source ? source.hostname.replace(/^www\./, "") : card.sourceNote)}</span>` : ""}
+      ${card.tags.map(tag => `<a class="tag" href="${escapeHtml(archiveUrl(tag, ""))}" aria-label="Search for ${escapeHtml(tag)}">${escapeHtml(tag)}</a>`).join("")}
+    </div>
+  </article>`;
 }
 
 function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }

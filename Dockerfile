@@ -17,5 +17,6 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/db ./db
 COPY --from=build /app/scripts ./scripts
+COPY --from=build /app/src/web/assets ./src/web/assets
 EXPOSE 3000
 CMD ["node", "dist/src/web/server.js"]

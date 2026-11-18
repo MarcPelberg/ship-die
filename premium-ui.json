@@ -1,0 +1,16 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["src/web"],
+  "locale": "en-US",
+  "canonicalMap": "DESIGN.md",
+  "requiredCapabilities": ["Form", "Scrollbar"],
+  "requiredCommands": ["typecheck", "unit", "build"],
+  "commands": {
+    "typecheck": "npm run typecheck",
+    "unit": "npm test",
+    "build": "npm run build"
+  },
+  "evidence": {
+    "failurePaths": "tests/web/render.test.ts"
+  }
+}
