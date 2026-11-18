@@ -5,6 +5,7 @@ export const archiveStyles = `
   --ink: #182743; --muted: #52647b; --primary: #244ead; --deep: #152d50;
   --signal: #b7dcff; --wash: #e8effb; --surface: #f8faff; --paper: #fff;
   --edge: #c9d4e4; --rail: #7f92aa; --scroll-hover: #536e93; --scroll-active: #314c72;
+  --error: #933423;
   --display: "Archivo", "Arial", sans-serif; --body: "Inter", "Segoe UI", sans-serif;
   --code: "IBM Plex Mono", Consolas, "Liberation Mono", monospace;
   --page: 72rem; --radius: .42rem;
@@ -35,6 +36,9 @@ button, input { font: inherit; }
 .mark { display: grid; place-items: center; width: 2rem; height: 1.75rem; background: var(--signal); color: var(--deep); border-radius: 2px; font: bold 1.15rem/1 var(--code); letter-spacing: -.11em; box-shadow: -3px 3px var(--deep), -4px 4px var(--signal); }
 .repo { gap: .45rem; padding: .4rem 0 .4rem .5rem; font: .85rem var(--code); }
 .repo span { font-family: var(--body); color: var(--signal); }
+.mast-links { display: flex; align-items: center; gap: 1rem; }
+.join-link { color: var(--signal); font-size: .9rem; font-weight: 600; padding: .5rem 0; text-decoration: none; }
+.join-link:hover,.join-link[aria-current] { text-decoration: underline; }
 .intro { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 2.7rem 0 1.35rem; }
 h1,h2,h3,p { margin: 0; }
 h1,h2,h3 { font-family: var(--display); }
@@ -105,7 +109,35 @@ article h3 a:hover { color: var(--primary); }
 .entry .summary { font-size: 1.12rem; line-height: 1.6; }
 .entry .details { margin-top: 1rem; }
 .entry .domain { font-size: .89rem; }
+.join-page { padding: 2rem 0 4rem; }
+.join-layout { display: grid; grid-template-columns: minmax(14rem,.85fr) minmax(20rem,1fr); gap: 3rem; max-width: 62rem; align-items: start; }
+.join-intro { padding-top: .5rem; }
+.join-intro h1,.join-confirm h1 { font-size: clamp(2.3rem,4.8vw,3.6rem); }
+.join-intro p,.join-confirm p { margin-top: .75rem; max-width: 42ch; color: var(--muted); }
+.join-intro strong { color: var(--ink); font: 600 .95em var(--code); }
+.join-form { padding: 1.4rem 1.55rem; border: 1px solid var(--edge); border-top: 3px solid var(--deep); background: var(--paper); }
+.required-note,.join-field p { color: var(--muted); font-size: .87rem; }
+.join-field { display: grid; gap: .34rem; margin: 1rem 0; }
+.join-field label { font-weight: 650; }
+.join-field input,.join-field textarea {
+  min-width: 0; width: 100%; border: 1px solid var(--rail); border-radius: var(--radius);
+  background: var(--paper); color: var(--ink); font: inherit; padding: .55rem .7rem;
+}
+.join-field input { min-height: 2.75rem; }
+.join-field textarea { field-sizing: content; min-height: 8rem; max-height: 22rem; resize: none; }
+.join-field [aria-invalid=true] { border: 2px solid var(--error); }
+.field-error,.form-error { color: var(--error); }
+.field-error { font-size: .9rem; }
+.form-error { border-left: 3px solid var(--error); margin-bottom: .75rem; padding-left: .7rem; font-weight: 600; }
+.join-form .submit { border: 0; border-radius: var(--radius); min-width: 10.8rem; }
+.join-form .submit:disabled { background: var(--muted); cursor: wait; }
+.join-confirm { max-width: 40rem; padding: 3rem 0; }
+.join-confirm a { display: inline-flex; margin-top: 1rem; font-weight: 600; }
 @media(max-width: 48rem) {
+  .join-page { padding-top: 1.25rem; }
+  .join-layout { display: block; max-width: 35rem; }
+  .join-intro { padding: 0 0 1.25rem; }
+  .join-form { padding: 1.15rem; }
   .frame { width: min(calc(100% - 2rem),var(--page)); }
   .mast-inner { height: 3.65rem; }
   .intro { padding: 1.7rem 0 1.15rem; gap: .65rem; }
@@ -121,6 +153,11 @@ article h3 a:hover { color: var(--primary); }
   .list-header { padding-bottom: .75rem; }
 }
 @media(max-width: 30rem) {
+  .mast-links { gap: .65rem; }
+  .join-link { font-size: .82rem; }
+  .repo { padding-left: 0; font-size: .73rem; gap: .15rem; }
+  .brand { font-size: 1.08rem; gap: .45rem; }
+  .mark { width: 1.65rem; height: 1.5rem; }
   .index-mark { display: none; }
   .magnifier { margin-left: .4rem; margin-right: .05rem; }
   #search { gap: .3rem; }

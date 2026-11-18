@@ -2,7 +2,9 @@
 
 Public, searchable archive of useful builder drops from the `/ship! = die development` WhatsApp group.
 
-Browse the archive at [shipdie.marcpelberg.com](https://shipdie.marcpelberg.com/). The November 18 update uses a group export covering September 16 through November 17, 2026. It contains selected summaries, and earlier entries come from the previous archive.
+Browse the archive at [aishipdie.com](https://aishipdie.com/). Links using `www.aishipdie.com` or the previous `shipdie.marcpelberg.com` address redirect to the same entry or search on the new domain.
+
+The November 18 update uses a group export covering September 16 through November 17, 2026. It contains selected summaries, and earlier entries come from the previous archive.
 
 ## Local Setup
 

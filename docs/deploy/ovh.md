@@ -4,7 +4,9 @@ This guide deploys Ship != Die to an OVH VPS with Docker Compose, Postgres, Cadd
 
 ## Current production host
 
-[shipdie.marcpelberg.com](https://shipdie.marcpelberg.com/) runs under `/opt/ship-die` on the shared OVH host. The Route 53 A record points to that host. Its nginx virtual host terminates TLS and proxies to the app on `127.0.0.1:3187`. Certbot renews the certificate. Set `APP_PUBLISH=127.0.0.1:3187` and `PUBLIC_BASE_URL=https://shipdie.marcpelberg.com` in the server's private `.env`.
+[aishipdie.com](https://aishipdie.com/) runs under `/opt/ship-die` on the shared OVH host at `135.148.171.224`. nginx terminates TLS and proxies to the app on `127.0.0.1:3187`. Certbot renews the certificates. Set `APP_PUBLISH=127.0.0.1:3187` and `PUBLIC_BASE_URL=https://aishipdie.com` in the server's private `.env`.
+
+Route 53 serves the `aishipdie.com` hosted zone. Its apex A record points to `135.148.171.224` and its `www` CNAME points to `aishipdie.com.`. The previous `shipdie.marcpelberg.com` A record points to the same IP in the `marcpelberg.com` hosted zone. nginx redirects both aliases to `https://aishipdie.com` and preserves the original path and query string so shared archive links continue to work.
 
 Update the running archive from GitHub:
 
@@ -16,7 +18,9 @@ docker compose up -d postgres
 docker compose run --rm --no-deps app node dist/scripts/migrate.js
 docker compose up -d --no-deps app
 docker compose exec -T app node dist/scripts/smoke.js
-curl -fsS 'https://shipdie.marcpelberg.com/?q=worktrees'
+curl -fsS 'https://aishipdie.com/?q=worktrees'
+curl -sSI 'https://www.aishipdie.com/?q=worktrees'
+curl -sSI 'https://shipdie.marcpelberg.com/?q=worktrees'
 ```
 
 The production worker summarizes eligible messages with a private model on OVH. Set `LOCAL_CURATOR_MODEL=qwen3:4b-instruct-2507-q4_K_M` in the server's private `.env`. Install the model once and rebuild the worker when updating application code.
@@ -129,3 +133,13 @@ docker compose exec -T postgres pg_dump -U shipdie -d shipdie | gzip > "backups/
 ```
 
 Copy backups off the OVH server regularly and verify restore procedures before relying on them.
+
+## Review private group requests
+
+On the OVH server, use the following read-only query from a private terminal to review the latest 25 applications. The form stores one request per WhatsApp number. A repeat submission preserves the original application. An organizer reviews requests and handles invitations separately.
+
+```sh
+cd /opt/ship-die
+docker compose exec postgres psql -X -U shipdie -d shipdie -P pager=off \
+  -c 'select id, submitted_at, name, whatsapp_phone, background from group_join_requests order by submitted_at desc, id desc limit 25'
+```

@@ -15,6 +15,7 @@ colors:
   rail: "#7F92AA"
   scroll-hover: "#536E93"
   scroll-active: "#314C72"
+  error: "#933423"
 typography:
   display:
     fontFamily: "Archivo, Arial, sans-serif"
@@ -55,6 +56,8 @@ components:
     backgroundColor: "{colors.scroll-hover}"
   scroll-thumb-active:
     backgroundColor: "{colors.scroll-active}"
+  field-error:
+    textColor: "{colors.error}"
 ---
 
 # Ship != Die design system
@@ -87,13 +90,15 @@ Search and topic links use the control radius. Topic icons use open, single-colo
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
-| Form | GET search form and progressive search script | `src/web/render.ts`, `src/web/search.ts` | Submit, type, clear, retry | Browser typing, Enter, keyboard clear and offline recovery |
+| Form | Search and join form renderers | `src/web/render.ts`, `src/web/search.ts` | Search, clear, join request and retry | Keyboard search, join field associations, validation focus and recovery |
 | Scrollbar | Global stylesheet | `src/web/styles.ts` | Document and mobile topic list | Narrow viewport and forced-colors inspection |
 | Archive navigation | Topic links, source links and page links | `src/web/render.ts`, `src/web/server.ts` | All, filtered, empty and unavailable | Render tests and browser history |
 
 Topic counts follow the search across all categories. Active topic, query and page belong in the URL. Search waits 300 ms while typing, waits through composition, and cancels superseded requests. Errors keep the current results available. Enter and the clear control act immediately. With scripts off, the form and every navigation link use ordinary GET requests.
 
 Every resource has a permanent entry URL using its stored slug. The index keeps source links on titles and includes a separate permalink. The entry view repeats the same date, topic, summary and tags, with a link back to the index.
+
+The masthead links to the WhatsApp group's join request. The form describes organizer review and collects a name, international WhatsApp number and background. The confirmation shows a receipt. Invalid fields retain their values and reference specific correction text. The first invalid field receives focus.
 
 ## Do's and Don'ts
 

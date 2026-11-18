@@ -114,21 +114,91 @@ export function renderHome(input: RenderHomeInput): string {
   </div>`, "index");
 }
 
-function renderPage(title: string, content: string, view: "index" | "entry", description = "Search tools, models, and workflows shared in the /Ship!=Die builder group."): string {
+function renderPage(title: string, content: string, view: "index" | "entry" | "join", description = "Search tools, models, and workflows shared in the /Ship!=Die builder group."): string {
+  const target = view === "index" ? "results" : view;
+  const destination = view === "index" ? "resources" : view === "join" ? "join request" : "entry";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)} · Ship != Die</title>
 <meta name="description" content="${escapeHtml(description)}">
 <meta property="og:title" content="${escapeHtml(title)} · Ship != Die"><meta property="og:description" content="${escapeHtml(description)}">
 <link rel="preload" href="/archivo-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/archive.css">${view === "index" ? '<script src="/archive.js" defer></script>' : ""}</head>
-<body><a class="skip" href="#${view === "index" ? "results" : "entry"}">Skip to ${view === "index" ? "resources" : "entry"}</a>
+<body><a class="skip" href="#${target}">Skip to ${destination}</a>
 <header class="mast"><div class="frame mast-inner">
   <a class="brand" href="/" aria-label="Ship != Die home"><span class="mark" aria-hidden="true">!=</span>Ship != Die</a>
-  <a class="repo" href="https://github.com/MarcPelberg/ship-die">GitHub <span aria-hidden="true">↗</span></a>
+  <nav class="mast-links" aria-label="Site navigation"><a class="join-link" href="/join"${view === "join" ? ' aria-current="page"' : ""}>Request to join</a>
+  <a class="repo" href="https://github.com/MarcPelberg/ship-die">GitHub <span aria-hidden="true">↗</span></a></nav>
 </div></header><main class="frame">${content}</main></body></html>`;
 }
 
 const backToIndex = '<a class="back-index" href="/">← Resource index</a>';
+
+type JoinField = "name" | "phone" | "background";
+export type JoinInput = {
+  values?: Record<JoinField, string>;
+  errors?: Partial<Record<JoinField, string>>;
+  message?: string;
+  success?: boolean;
+};
+
+export function renderJoin({ values, errors = {}, message, success = false }: JoinInput = {}): string {
+  const description = "Request to join the /Ship!=Die WhatsApp group.";
+  if (success) {
+    return renderPage("Request received", `<div class="join-confirm" id="join">
+      <h1>Request received</h1><p>The group organizers will review your request. They can follow up using the WhatsApp number you provided.</p>
+      <a href="/">Browse the resource index →</a></div>`, "join", description);
+  }
+  const fields: JoinField[] = ["name", "phone", "background"];
+  const firstInvalid = fields.find(field => errors[field]);
+  function fieldState(field: JoinField): string {
+    const hint = field === "name" ? [] : [`${field}-hint`];
+    if (errors[field]) hint.push(`${field}-error`);
+    const describedBy = hint.length ? ` aria-describedby="${hint.join(" ")}"` : "";
+    return `${describedBy}${errors[field] ? ' aria-invalid="true"' : ""}${field === firstInvalid ? " autofocus" : ""}`;
+  }
+  const fieldError = (name: JoinField) => errors[name]
+    ? `<span class="field-error" id="${name}-error">${escapeHtml(errors[name]!)}</span>` : "";
+  const value = (name: JoinField) => escapeHtml(values?.[name] ?? "");
+  return renderPage("Request to join", `<section class="join-page" id="join" aria-labelledby="join-heading">
+    ${backToIndex}
+    <div class="join-layout"><div class="join-intro">
+      <h1 id="join-heading">Request to join</h1>
+      <p>Tell the <strong>/Ship!=Die</strong> WhatsApp group a little about yourself. Organizers use these details to review your request and contact you about joining.</p>
+    </div>
+    <form class="join-form" action="/join" method="post" novalidate>
+      ${message ? `<p class="form-error" role="alert">${escapeHtml(message)}</p>` : ""}
+      <p class="required-note">All three fields are required.</p>
+      <div class="join-field"><label for="name">Name</label>
+        <input id="name" name="name" autocomplete="name" maxlength="100" required value="${value("name")}"${fieldState("name")}>
+        ${fieldError("name")}</div>
+      <div class="join-field"><label for="phone">WhatsApp number</label>
+        <p id="phone-hint">Include + and your country code, for example +1 202 555 0146.</p>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" required value="${value("phone")}"${fieldState("phone")}>
+        ${fieldError("phone")}</div>
+      <div class="join-field"><label for="background">Background</label>
+        <p id="background-hint">What do you build or work on? A few sentences is enough.</p>
+        <textarea id="background" name="background" rows="5" minlength="10" maxlength="1000" required style="resize: none"${fieldState("background")}>${value("background")}</textarea>
+        ${fieldError("background")}</div>
+      <div hidden inert><input name="website" tabindex="-1" autocomplete="off" aria-label="Leave empty"></div>
+      <button class="submit" type="submit">Send join request</button>
+    </form></div>
+    <script>
+      const joinForm = document.querySelector(".join-form");
+      const sendButton = joinForm.querySelector("button[type=submit]");
+      joinForm.addEventListener("submit", event => {
+        if (sendButton.disabled) { event.preventDefault(); return; }
+        joinForm.setAttribute("aria-busy", "true");
+        sendButton.disabled = true;
+        sendButton.textContent = "Sending…";
+      });
+      window.addEventListener("pageshow", () => {
+        joinForm.removeAttribute("aria-busy");
+        sendButton.disabled = false;
+        sendButton.textContent = "Send join request";
+      });
+    </script>
+  </section>`, "join", description);
+}
 
 export function renderEntry(card: PublicCard): string {
   return renderPage(card.title, `<div class="entry" id="entry">${backToIndex}${renderCard(card, true)}</div>`, "entry", card.summary);
