@@ -24,6 +24,7 @@ export type ProcessMessageInput = {
   provider: LlmProvider;
   repo: PipelineRepo;
   fetchMetadata: (url: string) => Promise<LinkMetadata>;
+  retryMetadataErrors?: boolean;
 };
 
 export type ProcessResult =
@@ -48,11 +49,12 @@ export async function processMessage(input: ProcessMessageInput): Promise<Proces
   }
 
   const links = await Promise.all(
-    extractUrls(message.text).map(async (rawUrl) => {
+    extractUrls(message.text).filter(url => URL.canParse(url)).map(async (rawUrl) => {
       const url = canonicalizeUrl(rawUrl);
       try {
         return await fetchMetadata(url);
-      } catch {
+      } catch (error) {
+        if (input.retryMetadataErrors) throw error;
         return { url, canonicalUrl: url };
       }
     })

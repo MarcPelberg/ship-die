@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CANONICAL_TYPES } from "../domain/taxonomy.js";
 import { containsPII } from "../domain/pii.js";
+import { sanitizePublicText } from "../domain/public-card.js";
 import type { CardDraft, LinkMetadata } from "../domain/types.js";
 import type { CardGenerationInput, LlmProvider } from "./provider.js";
 
@@ -29,7 +30,8 @@ export async function publicRepository(url: string, request = fetch): Promise<Li
   const response = await request(`https://api.github.com/repos/${repo[1]}/${repo[2]}`, {
     redirect: "error", signal: AbortSignal.timeout(5000), headers: { "user-agent": "ShipDie-Archive" }
   });
-  if (!response.ok) return empty;
+  if (response.status === 404 || response.status === 410 || response.status === 451) return empty;
+  if (!response.ok) throw new Error(`Public repository lookup returned HTTP ${response.status}`);
   const data = await response.json() as { private?: boolean; full_name?: string; description?: string };
   if (data.private !== false || data.full_name?.toLowerCase() !== `${repo[1]}/${repo[2]}`.toLowerCase()) return empty;
   const canonicalUrl = `https://github.com/${data.full_name}`;
@@ -67,8 +69,12 @@ export class OvhCurator implements LlmProvider {
     const words = text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
     const result = [draft.title, draft.summary, ...draft.tags].join(" ");
     const normalized = (result.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).join(" ");
-    const quoted = words.some((_, i) => i + 8 <= words.length && normalized.includes(words.slice(i, i + 8).join(" ")));
-    if (!draft.publish || !draft.title.trim() || !draft.summary.trim() || containsPII(result) || sensitive.test(result) || quoted) return rejected;
+    const window = Math.min(8, words.length);
+    const quoted = window >= 3 && words.some((_, i) =>
+      i + window <= words.length && normalized.includes(words.slice(i, i + window).join(" "))
+    );
+    const title = sanitizePublicText(draft.title).replace(/\[(name|email|phone)\]/g, "").trim();
+    if (!draft.publish || !title || !draft.summary.trim() || containsPII(result) || sensitive.test(result) || quoted) return rejected;
     return {
       title: draft.title, summary: draft.summary, canonicalType: draft.category, tags: draft.tags,
       sourceUrl: reference?.canonicalUrl, sourceNote: reference ? "GitHub repository" : "Group discussion",

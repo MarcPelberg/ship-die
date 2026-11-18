@@ -26,10 +26,15 @@ async function main(): Promise<void> {
   }
 
   try {
+    const group = env.whatsappGroupJid.trim();
+    if (process.env.NODE_ENV === "production" && !group.endsWith("@g.us")) {
+      console.info("Waiting for the dedicated WhatsApp group to be linked and pinned.");
+      return;
+    }
     // A second worker must not publish the same pending batch.
     const lock = await client.query<{ locked: boolean }>("select pg_try_advisory_lock(hashtext('ship-die-worker')) as locked");
     if (!lock.rows[0].locked) return;
-    const messages = await repo.pendingRawMessages(25);
+    const messages = await repo.pendingRawMessages(25, group);
     for (const message of messages) {
       await client.query("begin");
       try {
@@ -37,7 +42,8 @@ async function main(): Promise<void> {
           message,
           provider,
           repo,
-          fetchMetadata: env.localCuratorModel ? publicRepository : fetchLinkMetadata
+          fetchMetadata: env.localCuratorModel ? publicRepository : fetchLinkMetadata,
+          retryMetadataErrors: Boolean(env.localCuratorModel)
         });
         await client.query("commit");
         console.log(`Curation result: ${result.status}`);

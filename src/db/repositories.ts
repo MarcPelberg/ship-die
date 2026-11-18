@@ -33,14 +33,14 @@ export class Repositories implements PipelineRepo {
     );
   }
 
-  async pendingRawMessages(limit = 25): Promise<RawMessageInput[]> {
+  async pendingRawMessages(limit = 25, groupId = ""): Promise<RawMessageInput[]> {
     const result = await this.db.query<RawMessageRow>(
       `select external_id, group_id, occurred_at, text, raw
        from raw_messages
-       where processed_at is null
+       where processed_at is null and ($2 = '' or group_id = $2)
        order by last_attempt_at asc nulls first, occurred_at asc
        limit $1`,
-      [limit]
+      [limit, groupId]
     );
 
     return result.rows.map((row) => ({

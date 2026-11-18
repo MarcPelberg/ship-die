@@ -12,10 +12,12 @@ describe("OVH curator", () => {
     expect(request.mock.calls[0][0]).toBe("https://api.github.com/repos/org/repo");
     request.mockResolvedValue(Response.json({ private: true }));
     expect((await publicRepository("https://github.com/org/repo", request)).canonicalUrl).toBe("");
+    request.mockResolvedValue(new Response(null, { status: 429 }));
+    await expect(publicRepository("https://github.com/org/repo", request)).rejects.toThrow("HTTP 429");
   });
 
   it("rejects copied chat and never gives identifiers or private links to the model", async () => {
-    const sentence = "Use one fresh working directory for every independent coding task";
+    const sentence = "Give each coding task a worktree";
     const request = vi.fn().mockResolvedValue(Response.json({ message: { content: JSON.stringify({
       publish: true, title: "Separate worktrees", summary: sentence, category: "tool", tags: []
     }) } }));
