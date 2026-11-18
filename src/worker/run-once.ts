@@ -7,16 +7,20 @@ import { fetchLinkMetadata } from "../metadata/fetch.js";
 import { processMessage } from "../pipeline/process-message.js";
 
 async function main(): Promise<void> {
+  const apiKey = env.deepseekApiKey.trim();
+  if (!apiKey && !["development", "test"].includes(process.env.NODE_ENV ?? "")) {
+    throw new Error("Set DEEPSEEK_API_KEY to process pending messages in production.");
+  }
   const db = createDb();
   const repo = new Repositories(db);
-  const provider = env.deepseekApiKey
+  const provider = apiKey
     ? new DeepSeekProvider({
-        apiKey: env.deepseekApiKey,
+        apiKey,
         model: env.deepseekModel
       })
     : new LocalFallbackProvider();
 
-  if (!env.deepseekApiKey) {
+  if (!apiKey) {
     console.warn("DEEPSEEK_API_KEY missing; using local fallback provider for curation");
   }
 

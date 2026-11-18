@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   const targetGroupJid = env.whatsappGroupJid.trim();
   const pairingPhone = env.whatsappPairPhone.replace(/\D/g, "");
   if (!targetGroupJid) {
-    console.warn("WHATSAPP_GROUP_JID is empty; reader will ingest all WhatsApp group chats and print discovered group JIDs.");
+    console.warn("Pairing mode. Set WHATSAPP_GROUP_JID to enable ingestion.");
   }
   let shutdownStarted = false;
   async function shutdown(exitCode: number): Promise<void> {
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   const { version } = await fetchLatestWaWebVersion();
   const sock = makeWASocket({
     auth: state,
-    logger: P({ level: "info" }),
+    logger: P({ level: "silent" }),
     browser: Browsers.macOS("Desktop"),
     version,
     printQRInTerminal: true
@@ -63,12 +63,27 @@ async function main(): Promise<void> {
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", (update) => {
+  sock.ev.on("connection.update", async (update) => {
     const code = (update.lastDisconnect?.error as any)?.output?.statusCode;
     console.log("whatsapp connection", { connection: update.connection, qr: Boolean(update.qr), code });
     if (update.qr) {
       qrcode.generate(update.qr, { small: true });
       console.log("Scan this QR with the dedicated WhatsApp account (Linked devices).");
+    }
+    if (update.connection === "open" && !targetGroupJid) {
+      try {
+        const groups = await sock.groupFetchAllParticipating();
+        const matches = Object.values(groups).filter(group =>
+          group.subject === "/Ship!=Die" || group.subject === "/ship! = die development"
+        );
+        if (matches.length === 1) {
+          console.log(`Set WHATSAPP_GROUP_JID=${matches[0].id} and restart the reader.`);
+        } else {
+          console.warn("Could not uniquely identify the Ship != Die group. Check membership and confirm its JID.");
+        }
+      } catch {
+        console.warn("Group lookup failed. Check the linked device and restart the reader.");
+      }
     }
     if (update.connection === "close") {
       const exitCode = code === DisconnectReason.loggedOut ? 0 : 1;
@@ -82,18 +97,13 @@ async function main(): Promise<void> {
   });
 
   sock.ev.on("messages.upsert", async ({ type, messages }) => {
-    if (type !== "notify") return;
+    if (!targetGroupJid || type !== "notify") return;
 
     for (const item of messages) {
       const remoteJid = item.key.remoteJid ?? "";
-      const isGroup = remoteJid.endsWith("@g.us");
-      if (!isGroup) continue;
-      if (targetGroupJid && remoteJid !== targetGroupJid) continue;
+      if (remoteJid !== targetGroupJid || !remoteJid.endsWith("@g.us")) continue;
       const text = messageText(item.message);
       if (!text) continue;
-      if (!targetGroupJid) {
-        console.log(`discovered group jid: ${remoteJid}`);
-      }
       const raw: RawMessageInput = {
         externalId: item.key.id || `${item.key.remoteJid}-${Date.now()}`,
         groupId: remoteJid,

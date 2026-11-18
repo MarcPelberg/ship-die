@@ -24,7 +24,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "${APP_PUBLISH:-3000}:3000"
     command: node dist/src/web/server.js
 
   worker:

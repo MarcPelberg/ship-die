@@ -2,6 +2,25 @@
 
 This guide deploys Ship != Die to an OVH VPS with Docker Compose, Postgres, Caddy TLS, the web app, worker, and WhatsApp reader.
 
+## Current production host
+
+[shipdie.marcpelberg.com](https://shipdie.marcpelberg.com/) runs under `/opt/ship-die` on the shared OVH host. The Route 53 A record points to that host. Its nginx virtual host terminates TLS and proxies to the app on `127.0.0.1:3187`. Certbot renews the certificate. Set `APP_PUBLISH=127.0.0.1:3187` and `PUBLIC_BASE_URL=https://shipdie.marcpelberg.com` in the server's private `.env`.
+
+Update the running archive from GitHub:
+
+```sh
+cd /opt/ship-die
+git pull --ff-only origin master
+docker compose build app
+docker compose up -d postgres
+docker compose run --rm --no-deps app node dist/scripts/migrate.js
+docker compose up -d --no-deps app
+docker compose exec -T app node dist/scripts/smoke.js
+curl -fsS 'https://shipdie.marcpelberg.com/?q=worktrees'
+```
+
+The web app and database serve the export-based archive. Enable the reader and worker separately when the dedicated account and model key are configured. The Caddy instructions below apply to a standalone VPS.
+
 ## Server
 
 Provision an OVH VPS with Ubuntu LTS, point the production DNS record at the server public IP, and open ports 22, 80, and 443 in the OVH firewall.
@@ -75,6 +94,8 @@ docker compose logs -f reader
 ```
 
 After the QR scan succeeds, the auth state is stored in the `whatsapp-auth` Docker volume at `/app/.data/wa-auth`. Do not reuse a personal WhatsApp account for this service.
+
+If you need the group ID, leave `WHATSAPP_GROUP_JID` empty while pairing. The reader pauses ingestion and, on connection, prints the JID only if exactly one group matches either the current title `/Ship!=Die` or the historical title `/ship! = die development`. Set that JID in `.env` and run `docker compose up -d reader` to enable ingestion. With a missing `DEEPSEEK_API_KEY`, the production worker leaves messages pending.
 
 ## Smoke Check
 
