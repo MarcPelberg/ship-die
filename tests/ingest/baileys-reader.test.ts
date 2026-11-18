@@ -13,14 +13,12 @@ vi.mock("../../src/db/repositories.js", () => ({
 }));
 vi.mock("baileys", () => ({
   default: () => ({ ev: { on }, groupFetchAllParticipating: listGroups }),
-  Browsers: { macOS: vi.fn() },
   DisconnectReason: {},
-  fetchLatestWaWebVersion: () => ({ version: [] }),
   useMultiFileAuthState: () => ({ state: {}, saveCreds: vi.fn() })
 }));
 
 const messages = ["archive@g.us", "other@g.us", "direct@s.whatsapp.net"].map(remoteJid => ({
-  key: { remoteJid, id: remoteJid }, message: { conversation: "example" }
+  key: { remoteJid, id: remoteJid }, messageTimestamp: 1700000000, message: { conversation: "example" }
 }));
 
 async function startReader(groupJid: string) {
@@ -56,10 +54,10 @@ describe("WhatsApp reader group scope", () => {
     expect(log).not.toHaveBeenCalledWith(expect.stringContaining("WHATSAPP_GROUP_JID="));
   });
 
-  it("stores only notifications from the pinned group", async () => {
+  it.each([["messages.upsert", "notify"], ["messages.upsert", "append"], ["messaging-history.set", undefined]])("filters %s/%s to the pinned group and applies the live cutoff", async (event, type) => {
     const handlers = await startReader("archive@g.us");
-    await handlers["messages.upsert"]({ type: "notify", messages });
+    await handlers[event!]({ type, messages });
     expect(insert).toHaveBeenCalledTimes(1);
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ groupId: "archive@g.us" }));
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ groupId: "archive@g.us" }), { applyReaderCutoff: true });
   });
 });

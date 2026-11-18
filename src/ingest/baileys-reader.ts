@@ -1,4 +1,4 @@
-import makeWASocket, { Browsers, DisconnectReason, fetchLatestWaWebVersion, useMultiFileAuthState } from "baileys";
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, type WAMessage } from "baileys";
 import P from "pino";
 import qrcode from "qrcode-terminal";
 import { env } from "../config/env.js";
@@ -34,13 +34,9 @@ async function main(): Promise<void> {
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(env.whatsappAuthDir);
-  const { version } = await fetchLatestWaWebVersion();
   const sock = makeWASocket({
     auth: state,
-    logger: P({ level: "silent" }),
-    browser: Browsers.macOS("Desktop"),
-    version,
-    printQRInTerminal: true
+    logger: P({ level: "silent" })
   });
 
   if (pairingPhone) {
@@ -96,26 +92,28 @@ async function main(): Promise<void> {
     }
   });
 
-  sock.ev.on("messages.upsert", async ({ type, messages }) => {
-    if (!targetGroupJid || type !== "notify") return;
-
+  async function storeGroupMessages(messages: WAMessage[]): Promise<void> {
+    if (!targetGroupJid) return;
     for (const item of messages) {
       const remoteJid = item.key.remoteJid ?? "";
       if (remoteJid !== targetGroupJid || !remoteJid.endsWith("@g.us")) continue;
+      const timestamp = Number(item.messageTimestamp);
+      if (!item.key.id || !Number.isFinite(timestamp) || timestamp <= 0) continue;
       const text = messageText(item.message);
       if (!text) continue;
       const raw: RawMessageInput = {
-        externalId: item.key.id || `${item.key.remoteJid}-${Date.now()}`,
+        externalId: item.key.id,
         groupId: remoteJid,
         senderId: item.key.participant ?? undefined,
-        occurredAt: new Date((Number(item.messageTimestamp) || Date.now() / 1000) * 1000),
-        text,
-        raw: item
+        occurredAt: new Date(timestamp * 1000),
+        text
       };
-      await repo.insertRawMessage(raw);
-      console.log(`stored whatsapp message ${raw.externalId}`);
+      await repo.insertRawMessage(raw, { applyReaderCutoff: true });
     }
-  });
+  }
+
+  sock.ev.on("messages.upsert", ({ messages }) => storeGroupMessages(messages));
+  sock.ev.on("messaging-history.set", ({ messages }) => storeGroupMessages(messages));
 
   process.on("SIGINT", async () => {
     await shutdown(0);

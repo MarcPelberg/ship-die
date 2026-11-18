@@ -16,10 +16,11 @@ type RawMessageRow = {
 export class Repositories implements PipelineRepo {
   constructor(private readonly db: Pick<Db, "query">, private readonly generator = "deepseek") {}
 
-  async insertRawMessage(message: RawMessageInput): Promise<void> {
+  async insertRawMessage(message: RawMessageInput, { applyReaderCutoff = false } = {}): Promise<void> {
     await this.db.query(
-      `insert into raw_messages (external_id, group_id, sender_hash, occurred_at, text, links, raw)
-       values ($1, $2, $3, $4, $5, $6, $7)
+      `insert into raw_messages (external_id, group_id, sender_hash, occurred_at, text, links, raw, held_for_reconciliation)
+       values ($1, $2, $3, $4, $5, $6, $7,
+         $8 and $4::timestamptz < (select (value #>> '{}')::timestamptz from system_state where key = 'whatsapp_reader_live_from'))
        on conflict (external_id) do nothing`,
       [
         message.externalId,
@@ -28,7 +29,8 @@ export class Repositories implements PipelineRepo {
         message.occurredAt,
         message.text,
         extractUrls(message.text),
-        JSON.stringify(message.raw ?? {})
+        JSON.stringify(message.raw ?? {}),
+        applyReaderCutoff
       ]
     );
   }
@@ -37,7 +39,7 @@ export class Repositories implements PipelineRepo {
     const result = await this.db.query<RawMessageRow>(
       `select external_id, group_id, occurred_at, text, raw
        from raw_messages
-       where processed_at is null and ($2 = '' or group_id = $2)
+       where processed_at is null and not held_for_reconciliation and ($2 = '' or group_id = $2)
        order by last_attempt_at asc nulls first, occurred_at asc
        limit $1`,
       [limit, groupId]
