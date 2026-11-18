@@ -96,6 +96,15 @@ article h3 a:hover { color: var(--primary); }
 .empty { background: var(--paper); border: 1px solid var(--edge); border-top: none; padding: 2.25rem 1.5rem; }
 .empty h3 { font-size: 1.2rem; }
 .empty p { margin: .25rem 0 .7rem; color: var(--muted); }
+.permalink { margin-left: auto; font: .8rem var(--body); }
+.entry { max-width: 52rem; padding: 2rem 0 4rem; }
+.back-index { display: inline-block; margin-bottom: 1.25rem; font-size: .95rem; }
+.entry article,.entry .empty { border-top: 2px solid var(--deep); }
+.entry article { padding-block: 1.5rem 2rem; }
+.entry h1 { margin: .75rem 0; font-size: clamp(2rem,5vw,3.2rem); line-height: 1.12; letter-spacing: -.045em; }
+.entry .summary { font-size: 1.12rem; line-height: 1.6; }
+.entry .details { margin-top: 1rem; }
+.entry .domain { font-size: .89rem; }
 @media(max-width: 48rem) {
   .frame { width: min(calc(100% - 2rem),var(--page)); }
   .mast-inner { height: 3.65rem; }

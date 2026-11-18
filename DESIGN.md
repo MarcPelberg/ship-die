@@ -93,6 +93,8 @@ Search and topic links use the control radius. Topic icons use open, single-colo
 
 Topic counts follow the search across all categories. Active topic, query and page belong in the URL. Search waits 300 ms while typing, waits through composition, and cancels superseded requests. Errors keep the current results available. Enter and the clear control act immediately. With scripts off, the form and every navigation link use ordinary GET requests.
 
+Every resource has a permanent entry URL using its stored slug. The index keeps source links on titles and includes a separate permalink. The entry view repeats the same date, topic, summary and tags, with a link back to the index.
+
 ## Do's and Don'ts
 
 - Give resource titles the strongest emphasis in the list. Show the source domain and the original post date.

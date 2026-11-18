@@ -6,11 +6,12 @@ import { env } from "../config/env.js";
 import { createDb } from "../db/client.js";
 import { CANONICAL_TYPES } from "../domain/taxonomy.js";
 import type { CanonicalType } from "../domain/types.js";
-import { PAGE_SIZE, renderHome, type PublicCard } from "./render.js";
+import { PAGE_SIZE, renderEntry, renderEntryError, renderHome, type PublicCard } from "./render.js";
 import { archiveSearch } from "./search.js";
 import { archiveStyles } from "./styles.js";
 
 type CardRow = {
+  slug: string;
   title: string;
   summary: string;
   canonical_type: CanonicalType;
@@ -31,7 +32,8 @@ export type AdminStatusDb = {
 };
 
 const db = createDb();
-const app = new Hono();
+export const app = new Hono();
+const publicColumns = "slug, title, summary, canonical_type, tags, source_url, source_note, discovered_at, published_at";
 
 app.get("/archive.css", c => c.body(archiveStyles, 200, { "Content-Type": "text/css; charset=utf-8" }));
 app.get("/archive.js", c => c.body(archiveSearch, 200, { "Content-Type": "text/javascript; charset=utf-8" }));
@@ -61,7 +63,7 @@ app.get("/", async (c) => {
     if (type) filters.push(`canonical_type = $${values.push(type)}`);
     const ranking = query ? "ts_rank(search_vector, plainto_tsquery('english', $1)) desc," : "";
     const result = await db.query<CardRow>(
-      `select title, summary, canonical_type, tags, source_url, source_note, discovered_at, published_at
+      `select ${publicColumns}
        from cards ${where()} order by ${ranking} discovered_at desc, published_at desc, slug
        limit ${PAGE_SIZE} offset $${values.push((page - 1) * PAGE_SIZE)}`, values
     );
@@ -69,6 +71,18 @@ app.get("/", async (c) => {
   } catch (error) {
     console.error("Could not load the public archive", error instanceof Error ? error.name : "unknown error");
     return c.html(renderHome({ query, type, page: Number.isSafeInteger(requestedPage) ? requestedPage : 1, cards: [], unavailable: true }), 503);
+  }
+});
+
+app.get("/resources/:slug", async c => {
+  const slug = c.req.param("slug");
+  try {
+    const result = await db.query<CardRow>(`select ${publicColumns} from cards where slug = $1`, [slug]);
+    const row = result.rows[0];
+    return row ? c.html(renderEntry(toPublicCard(row))) : c.html(renderEntryError(), 404);
+  } catch (error) {
+    console.error("Could not load the public entry", error instanceof Error ? error.name : "unknown error");
+    return c.html(renderEntryError(slug), 503);
   }
 });
 
@@ -94,7 +108,7 @@ export async function buildAdminStatus(statusDb: AdminStatusDb): Promise<{
 }> {
   const [cards, pendingMessages, latestRawMessage] = await Promise.all([
     statusDb.query<{ count: string }>("select count(*) from cards"),
-    statusDb.query<{ count: string }>("select count(*) from raw_messages where processed_at is null"),
+    statusDb.query<{ count: string }>("select count(*) from raw_messages where processed_at is null and not held_for_reconciliation"),
     statusDb.query<LatestRawMessageRow>(
       `select external_id, occurred_at
        from raw_messages
@@ -118,6 +132,7 @@ export async function buildAdminStatus(statusDb: AdminStatusDb): Promise<{
 
 export function toPublicCard(row: CardRow): PublicCard {
   return {
+    slug: row.slug,
     title: row.title,
     summary: row.summary,
     canonicalType: row.canonical_type,

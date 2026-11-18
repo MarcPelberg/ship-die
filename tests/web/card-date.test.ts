@@ -8,6 +8,7 @@ describe("card dates", () => {
     const { toPublicCard } = await import("../../src/web/server.js");
 
     const card = toPublicCard({
+      slug: "harness-notes",
       title: "Harness Notes",
       summary: "Native local harness notes.",
       canonical_type: "agent harness",

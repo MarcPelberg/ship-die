@@ -7,6 +7,7 @@ describe("renderHome", () => {
       query: "",
       type: "",
       cards: [{
+        slug: "beads-test",
         title: "Beads",
         summary: "Memory layer for coding agents.",
         canonicalType: "memory/state",
@@ -23,6 +24,7 @@ describe("renderHome", () => {
     expect(html).toContain('href="/?type=memory%2Fstate"');
     expect(html).toContain('href="/?q=coding+agents"');
     expect(html).toContain('<a href="https://github.com/gastownhall/beads"');
+    expect(html).toContain('href="/resources/beads-test" rel="bookmark" aria-label="Permalink to Beads"');
   });
 
   it("keeps the active query on topic links and offers recovery from empty searches", () => {

@@ -4,6 +4,7 @@ import type { CanonicalType } from "../domain/types.js";
 export const PAGE_SIZE = 24;
 
 export type PublicCard = {
+  slug: string;
   title: string;
   summary: string;
   canonicalType: CanonicalType;
@@ -82,24 +83,14 @@ export function renderHome(input: RenderHomeInput): string {
       ? '<div class="empty"><h3>No matching resources</h3><p>Try another keyword or browse every topic.</p><a href="/">Browse all resources</a></div>'
       : '<div class="empty"><h3>No resources yet</h3><p>Published entries will appear here.</p></div>';
   } else {
-    list = cards.map(renderCard).join("");
+    list = cards.map(card => renderCard(card)).join("");
   }
   const pages = Math.ceil(total / PAGE_SIZE);
   const pager = (n: number, label: string) => `<a href="${escapeHtml(archiveUrl(query, type, n))}#results">${label}</a>`;
   const status = total > PAGE_SIZE
     ? `${number.format((page - 1) * PAGE_SIZE + 1)}–${number.format(Math.min(page * PAGE_SIZE, total))} of ${number.format(total)} resources`
     : `${number.format(total)} resource${total === 1 ? "" : "s"}`;
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(title)} · Ship != Die</title>
-<meta name="description" content="Search tools, models, and workflows shared in the /Ship!=Die builder group.">
-<link rel="preload" href="/archivo-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/archive.css"><script src="/archive.js" defer></script></head>
-<body><a class="skip" href="#results">Skip to resources</a>
-<header class="mast"><div class="frame mast-inner">
-  <a class="brand" href="/" aria-label="Ship != Die home"><span class="mark" aria-hidden="true">!=</span>Ship != Die</a>
-  <a class="repo" href="https://github.com/MarcPelberg/ship-die">GitHub <span aria-hidden="true">↗</span></a>
-</div></header>
-<main class="frame">
+  return renderPage(title, `
   <div class="intro"><div><h1>Resource index</h1><p>Tools, models, and workflows shared in the <strong>/Ship!=Die</strong> builder group.</p></div>
     <div class="index-mark" aria-hidden="true"><i></i><i></i><i><b>!=</b></i></div>
   </div>
@@ -120,11 +111,42 @@ export function renderHome(input: RenderHomeInput): string {
       ${list}
       ${pages > 1 ? `<nav class="pages" aria-label="Result pages">${page > 1 ? pager(page - 1, "← Previous") : ""}<span>Page ${number.format(page)} of ${number.format(pages)}</span>${page < pages ? pager(page + 1, "Next →") : ""}</nav>` : ""}
     </section>
-  </div>
-</main></body></html>`;
+  </div>`, "index");
 }
 
-function renderCard(card: PublicCard): string {
+function renderPage(title: string, content: string, view: "index" | "entry", description = "Search tools, models, and workflows shared in the /Ship!=Die builder group."): string {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)} · Ship != Die</title>
+<meta name="description" content="${escapeHtml(description)}">
+<meta property="og:title" content="${escapeHtml(title)} · Ship != Die"><meta property="og:description" content="${escapeHtml(description)}">
+<link rel="preload" href="/archivo-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/archive.css">${view === "index" ? '<script src="/archive.js" defer></script>' : ""}</head>
+<body><a class="skip" href="#${view === "index" ? "results" : "entry"}">Skip to ${view === "index" ? "resources" : "entry"}</a>
+<header class="mast"><div class="frame mast-inner">
+  <a class="brand" href="/" aria-label="Ship != Die home"><span class="mark" aria-hidden="true">!=</span>Ship != Die</a>
+  <a class="repo" href="https://github.com/MarcPelberg/ship-die">GitHub <span aria-hidden="true">↗</span></a>
+</div></header><main class="frame">${content}</main></body></html>`;
+}
+
+const backToIndex = '<a class="back-index" href="/">← Resource index</a>';
+
+export function renderEntry(card: PublicCard): string {
+  return renderPage(card.title, `<div class="entry" id="entry">${backToIndex}${renderCard(card, true)}</div>`, "entry", card.summary);
+}
+
+export function renderEntryError(retrySlug?: string): string {
+  const title = retrySlug ? "This resource is unavailable" : "Resource not found";
+  const recovery = retrySlug
+    ? `<p>Try loading this entry again.</p><a href="${escapeHtml(entryUrl(retrySlug))}">Try again</a>`
+    : "<p>Browse the index or search for the resource by name.</p>";
+  return renderPage(title, `<div class="entry" id="entry">${backToIndex}<div class="empty"><h1>${title}</h1>${recovery}</div></div>`, "entry");
+}
+
+function entryUrl(slug: string): string {
+  return "/resources/" + encodeURIComponent(slug);
+}
+
+function renderCard(card: PublicCard, standalone = false): string {
   let source: URL | undefined;
   try {
     const url = new URL(card.sourceUrl ?? "");
@@ -132,11 +154,14 @@ function renderCard(card: PublicCard): string {
   } catch { /* Entries without a public URL still carry their summary. */ }
   const date = card.publishedAt.toISOString().slice(0, 10);
   const title = escapeHtml(card.title);
+  const domain = source ? escapeHtml(source.hostname.replace(/^www\./, "")) : escapeHtml(card.sourceNote);
+  const sourceLink = source ? `<a href="${escapeHtml(source.href)}" rel="nofollow noreferrer">` : "";
+  const permalink = `<a class="permalink" href="${escapeHtml(entryUrl(card.slug))}" rel="bookmark" aria-label="Permalink to ${title}">Permalink</a>`;
   return `<article>
-    <div class="meta"><span class="category">${icon(card.canonicalType)}${escapeHtml(labels[card.canonicalType])}</span><span class="dot" aria-hidden="true">·</span><time datetime="${date}">${dateFormat.format(card.publishedAt)}</time></div>
-    <h3>${source ? `<a href="${escapeHtml(source.href)}" rel="nofollow noreferrer">${title} <span class="out" aria-hidden="true">↗</span></a>` : title}</h3>
+    <div class="meta"><span class="category">${icon(card.canonicalType)}${escapeHtml(labels[card.canonicalType])}</span><span class="dot" aria-hidden="true">·</span><time datetime="${date}">${dateFormat.format(card.publishedAt)}</time>${standalone ? "" : permalink}</div>
+    ${standalone ? `<h1>${title}</h1>` : `<h3>${sourceLink ? `${sourceLink}${title} <span class="out" aria-hidden="true">↗</span></a>` : `<a href="${escapeHtml(entryUrl(card.slug))}">${title}</a>`}</h3>`}
     <p class="summary">${escapeHtml(card.summary)}</p>
-    <div class="details">${source || card.sourceNote ? `<span class="domain">${escapeHtml(source ? source.hostname.replace(/^www\./, "") : card.sourceNote)}</span>` : ""}
+    <div class="details">${domain ? `<span class="domain">${standalone && sourceLink ? `${sourceLink}Open ${domain} ↗</a>` : domain}</span>` : ""}
       ${card.tags.map(tag => `<a class="tag" href="${escapeHtml(archiveUrl(tag, ""))}" aria-label="Search for ${escapeHtml(tag)}">${escapeHtml(tag)}</a>`).join("")}
     </div>
   </article>`;
