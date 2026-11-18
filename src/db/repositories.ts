@@ -14,7 +14,7 @@ type RawMessageRow = {
 };
 
 export class Repositories implements PipelineRepo {
-  constructor(private readonly db: Db) {}
+  constructor(private readonly db: Pick<Db, "query">, private readonly generator = "deepseek") {}
 
   async insertRawMessage(message: RawMessageInput): Promise<void> {
     await this.db.query(
@@ -38,7 +38,7 @@ export class Repositories implements PipelineRepo {
       `select external_id, group_id, occurred_at, text, raw
        from raw_messages
        where processed_at is null
-       order by occurred_at asc
+       order by last_attempt_at asc nulls first, occurred_at asc
        limit $1`,
       [limit]
     );
@@ -96,7 +96,7 @@ export class Repositories implements PipelineRepo {
         publicCard.sourceNote,
         message.occurredAt,
         publicCard.confidence,
-        JSON.stringify({ generatedBy: "deepseek" }),
+        JSON.stringify({ generatedBy: this.generator }),
         message.externalId
       ]
     );

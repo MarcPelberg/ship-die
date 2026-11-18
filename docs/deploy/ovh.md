@@ -19,7 +19,15 @@ docker compose exec -T app node dist/scripts/smoke.js
 curl -fsS 'https://shipdie.marcpelberg.com/?q=worktrees'
 ```
 
-The web app and database serve the export-based archive. Enable the reader and worker separately when the dedicated account and model key are configured. The Caddy instructions below apply to a standalone VPS.
+The production worker summarizes eligible messages with a private model on OVH. Set `LOCAL_CURATOR_MODEL=qwen3:4b-instruct-2507-q4_K_M` in the server's private `.env`. Install the model once and rebuild the worker when updating application code.
+
+```sh
+docker compose up -d curator
+docker compose exec -T curator ollama pull qwen3:4b-instruct-2507-q4_K_M
+docker compose up -d --build worker
+```
+
+The worker checks for new messages every minute. An interrupted or failed item stays pending. Link the dedicated WhatsApp reader as described below. Only confirmed public GitHub repository URLs are attached automatically by the local curator. The Caddy instructions below apply to a standalone VPS.
 
 ## Server
 
@@ -95,7 +103,7 @@ docker compose logs -f reader
 
 After the QR scan succeeds, the auth state is stored in the `whatsapp-auth` Docker volume at `/app/.data/wa-auth`. Do not reuse a personal WhatsApp account for this service.
 
-If you need the group ID, leave `WHATSAPP_GROUP_JID` empty while pairing. The reader pauses ingestion and, on connection, prints the JID only if exactly one group matches either the current title `/Ship!=Die` or the historical title `/ship! = die development`. Set that JID in `.env` and run `docker compose up -d reader` to enable ingestion. With a missing `DEEPSEEK_API_KEY`, the production worker leaves messages pending.
+If you need the group ID, leave `WHATSAPP_GROUP_JID` empty while pairing. The reader pauses ingestion and, on connection, prints the JID only if exactly one group matches either the current title `/Ship!=Die` or the historical title `/ship! = die development`. Set that JID in `.env` and run `docker compose up -d reader` to enable ingestion. A worker with neither a local model nor a DeepSeek API key leaves messages pending.
 
 ## Smoke Check
 

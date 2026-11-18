@@ -7,6 +7,7 @@ const EnvSchema = z.object({
   PUBLIC_BASE_URL: z.string().url().default("http://localhost:3000"),
   ADMIN_TOKEN: z.string().min(8),
   DEEPSEEK_API_KEY: z.string().default(""),
+  LOCAL_CURATOR_MODEL: z.string().trim().default(""),
   DEEPSEEK_MODEL: z.string().default("deepseek-v4-flash"),
   DEEPSEEK_STRONG_MODEL: z.string().default("deepseek-v4-pro"),
   WHATSAPP_GROUP_JID: z.string().default(""),
@@ -20,6 +21,7 @@ export type AppEnv = {
   publicBaseUrl: string;
   adminToken: string;
   deepseekApiKey: string;
+  localCuratorModel: string;
   deepseekModel: string;
   deepseekStrongModel: string;
   whatsappGroupJid: string;
@@ -35,6 +37,7 @@ export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
     publicBaseUrl: parsed.PUBLIC_BASE_URL,
     adminToken: parsed.ADMIN_TOKEN,
     deepseekApiKey: parsed.DEEPSEEK_API_KEY,
+    localCuratorModel: parsed.LOCAL_CURATOR_MODEL,
     deepseekModel: parsed.DEEPSEEK_MODEL,
     deepseekStrongModel: parsed.DEEPSEEK_STRONG_MODEL,
     whatsappGroupJid: parsed.WHATSAPP_GROUP_JID,
