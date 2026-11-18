@@ -4,7 +4,11 @@ Public, searchable archive of useful builder drops from the `/ship! = die develo
 
 Browse the archive at [aishipdie.com](https://aishipdie.com/). Links using `www.aishipdie.com` or the previous `shipdie.marcpelberg.com` address redirect to the same entry or search on the new domain.
 
-The November 18 update uses a group export covering September 16 through November 17, 2026. It contains selected summaries, and earlier entries come from the previous archive.
+### Historical coverage checked on November 18, 2026
+
+The archive has selected resources from excerpts shared on April 29 and May 7. The supplied text and Markdown exports both cover September 16 through November 17. They contain the same 97 entries on 18 dates. Five images and one document appear as placeholders.
+
+The available sources leave May 8 through September 15 unverified. The later export also has no entries dated October 15 through November 8. An export from a long-time member with history across those dates would help distinguish quiet periods from missing messages.
 
 ## Local Setup
 
