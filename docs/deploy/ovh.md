@@ -109,6 +109,28 @@ After the QR scan succeeds, the auth state is stored in the `whatsapp-auth` Dock
 
 If you need the group ID, leave `WHATSAPP_GROUP_JID` empty while pairing. The reader pauses ingestion and, on connection, prints the JID only if exactly one group matches either the current title `/Ship!=Die` or the historical title `/ship! = die development`. Set that JID in `.env` and run `docker compose up -d reader` to enable ingestion. A worker with neither a local model nor a DeepSeek API key leaves messages pending.
 
+## Reader history recovery
+
+The pinned reader accepts full sync notifications and starts a bounded history request when WhatsApp supplies a genuine message from the group. It can request 24 pages of 50 messages per run. WhatsApp and the linked phone determine which messages are available. Pre-launch text stays in `raw_messages` with `held_for_reconciliation` set until editorial review.
+
+Inspect recovery progress without displaying private message or group identifiers:
+
+```sql
+SELECT value->>'status' AS status, value->>'pages' AS pages_requested, updated_at
+FROM system_state WHERE key LIKE 'whatsapp_history_recovery:%';
+```
+
+A missing row means no usable anchor has started recovery. `requested` awaits a matching reply. `no_older_returned` means a reply supplied no older usable anchor. `page_limit` retains the oldest returned anchor for another run. These states do not establish that every historical message was recovered. A persistent `sending` or `send_failed` state needs operator review because delivery is uncertain.
+
+To authorize another bounded run, set the status of the exact pinned group's row to `resume_requested`, keeping its stored anchors. The reader checks for this explicit override when it connects. Run the following in psql with `pinned_group` set privately to the current configured group. Restart only the reader after confirming that exactly one row changed:
+
+```sql
+UPDATE system_state
+SET value = jsonb_set(value, '{status}', '"resume_requested"'::jsonb), updated_at = now()
+WHERE key = 'whatsapp_history_recovery:' || :'pinned_group'
+  AND value->>'status' IN ('page_limit', 'no_older_returned', 'send_failed', 'sending', 'requested');
+```
+
 ## Smoke Check
 
 Run the production smoke check after deploy:

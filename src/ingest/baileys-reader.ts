@@ -1,16 +1,21 @@
-import makeWASocket, { DisconnectReason, useMultiFileAuthState, type WAMessage } from "baileys";
+import makeWASocket, { DisconnectReason, normalizeMessageContent, proto, useMultiFileAuthState, type WAMessage } from "baileys";
 import P from "pino";
 import qrcode from "qrcode-terminal";
 import { env } from "../config/env.js";
 import { createDb, closeDb } from "../db/client.js";
 import { Repositories } from "../db/repositories.js";
 import type { RawMessageInput } from "../domain/types.js";
+import { GroupHistoryRecovery } from "./group-history.js";
 
-function messageText(message: any): string {
-  return message?.conversation
-    || message?.extendedTextMessage?.text
-    || message?.imageMessage?.caption
-    || message?.videoMessage?.caption
+function messageText(message: WAMessage["message"]): string {
+  const outer = message?.ephemeralMessage?.message ?? message;
+  if (outer?.viewOnceMessage || outer?.viewOnceMessageV2 || outer?.viewOnceMessageV2Extension) return "";
+  const body = normalizeMessageContent(outer);
+  return body?.conversation
+    || body?.extendedTextMessage?.text
+    || body?.imageMessage?.caption
+    || body?.videoMessage?.caption
+    || body?.documentMessage?.caption
     || "";
 }
 
@@ -36,8 +41,10 @@ async function main(): Promise<void> {
   const { state, saveCreds } = await useMultiFileAuthState(env.whatsappAuthDir);
   const sock = makeWASocket({
     auth: state,
+    shouldSyncHistoryMessage: () => targetGroupJid.endsWith("@g.us"),
     logger: P({ level: "silent" })
   });
+  const recovery = targetGroupJid.endsWith("@g.us") ? new GroupHistoryRecovery(targetGroupJid, db, sock.fetchMessageHistory) : undefined;
 
   if (pairingPhone) {
     let pairingPrinted = false;
@@ -62,6 +69,17 @@ async function main(): Promise<void> {
   sock.ev.on("connection.update", async (update) => {
     const code = (update.lastDisconnect?.error as any)?.output?.statusCode;
     console.log("whatsapp connection", { connection: update.connection, qr: Boolean(update.qr), code });
+    if (update.connection === "open" && recovery) {
+      await recovery.resumeIfRequested();
+      try {
+        const { creation } = await sock.groupMetadata(targetGroupJid);
+        if (creation && Number.isSafeInteger(creation)) {
+          console.log("Pinned group created (UTC)", new Date(creation * 1000).toISOString().slice(0, 10));
+        }
+      } catch {
+        console.warn("Pinned group creation date unavailable.");
+      }
+    }
     if (update.qr) {
       qrcode.generate(update.qr, { small: true });
       console.log("Scan this QR with the dedicated WhatsApp account (Linked devices).");
@@ -106,14 +124,22 @@ async function main(): Promise<void> {
         groupId: remoteJid,
         senderId: item.key.participant ?? undefined,
         occurredAt: new Date(timestamp * 1000),
-        text
+        text,
+        raw: typeof item.key.fromMe === "boolean" ? { fromMe: item.key.fromMe } : {}
       };
       await repo.insertRawMessage(raw, { applyReaderCutoff: true });
     }
   }
 
-  sock.ev.on("messages.upsert", ({ messages }) => storeGroupMessages(messages));
-  sock.ev.on("messaging-history.set", ({ messages }) => storeGroupMessages(messages));
+  sock.ev.on("messages.upsert", async ({ messages }) => {
+    await storeGroupMessages(messages);
+    await recovery?.observe(messages);
+  });
+  sock.ev.on("messaging-history.set", async ({ messages, syncType, peerDataRequestSessionId, progress }) => {
+    await storeGroupMessages(messages);
+    const onDemand = syncType === proto.HistorySync.HistorySyncType.ON_DEMAND;
+    await recovery?.observe(messages, onDemand ? peerDataRequestSessionId || null : undefined, progress == null || progress >= 100);
+  });
 
   process.on("SIGINT", async () => {
     await shutdown(0);

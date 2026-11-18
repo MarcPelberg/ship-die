@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { on, insert, listGroups, env } = vi.hoisted(() => ({
+const { on, insert, listGroups, socketOptions, env } = vi.hoisted(() => ({
   on: vi.fn(),
   insert: vi.fn(),
   listGroups: vi.fn(),
+  socketOptions: vi.fn(),
   env: { whatsappGroupJid: "", whatsappPairPhone: "", whatsappAuthDir: "unused" }
 }));
 vi.mock("../../src/config/env.js", () => ({ env }));
@@ -11,8 +12,12 @@ vi.mock("../../src/db/client.js", () => ({ createDb: vi.fn(), closeDb: vi.fn() }
 vi.mock("../../src/db/repositories.js", () => ({
   Repositories: class { insertRawMessage = insert; }
 }));
-vi.mock("baileys", () => ({
-  default: () => ({ ev: { on }, groupFetchAllParticipating: listGroups }),
+vi.mock("baileys", async (importOriginal) => ({
+  ...await importOriginal<typeof import("baileys")>(),
+  default: (options: unknown) => {
+    socketOptions(options);
+    return { ev: { on }, groupFetchAllParticipating: listGroups };
+  },
   DisconnectReason: {},
   useMultiFileAuthState: () => ({ state: {}, saveCreds: vi.fn() })
 }));
@@ -37,6 +42,7 @@ describe("WhatsApp reader group scope", () => {
   it.each(["/Ship!=Die", "/ship! = die development"])("pairs without storing messages and shows only the unique match for %s", async subject => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const handlers = await startReader("");
+    expect(socketOptions.mock.calls[0][0].shouldSyncHistoryMessage({ syncType: 2 })).toBe(false);
     const archive = { id: "archive@g.us", subject };
     listGroups.mockResolvedValue({ archive, other: { id: "other@g.us", subject: "Other" } });
     await handlers["connection.update"]({ connection: "open" });
@@ -56,8 +62,21 @@ describe("WhatsApp reader group scope", () => {
 
   it.each([["messages.upsert", "notify"], ["messages.upsert", "append"], ["messaging-history.set", undefined]])("filters %s/%s to the pinned group and applies the live cutoff", async (event, type) => {
     const handlers = await startReader("archive@g.us");
+    expect(socketOptions.mock.calls[0][0].shouldSyncHistoryMessage({ syncType: 2 })).toBe(true);
     await handlers[event!]({ type, messages });
     expect(insert).toHaveBeenCalledTimes(1);
     expect(insert).toHaveBeenCalledWith(expect.objectContaining({ groupId: "archive@g.us" }), { applyReaderCutoff: true });
+  });
+  it("extracts the current ephemeral text and a document caption without quoted or view-once content", async () => {
+    const handlers = await startReader("archive@g.us");
+    const bodies = [
+      { ephemeralMessage: { message: { extendedTextMessage: { text: "new content", contextInfo: { quotedMessage: { conversation: "quoted" } } } } } },
+      { documentWithCaptionMessage: { message: { documentMessage: { caption: "document caption" } } } },
+      { viewOnceMessageV2: { message: { imageMessage: { caption: "view once" } } } }
+    ];
+    await handlers["messaging-history.set"]({ messages: bodies.map((message, i) => ({
+      ...messages[0], key: { remoteJid: "archive@g.us", id: String(i) }, message
+    })) });
+    expect(insert.mock.calls.map(([raw]) => raw.text)).toEqual(["new content", "document caption"]);
   });
 });
