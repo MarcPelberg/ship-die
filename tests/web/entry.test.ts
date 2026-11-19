@@ -10,6 +10,11 @@ describe("public resource links", () => {
     vi.stubEnv("ADMIN_TOKEN", "test-token");
     ({ app } = await import("../../src/web/server.js"));
   });
+  it.each(["/bravos", "/bravos/"])("redirects %s to the protected Bravos directory", async path => {
+    const response = await app.request(path);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("https://marcpelberg.com/bravos/");
+  });
   const row = {
     slug: "memory-note-a143", title: "Memory & state", summary: "Practical notes.", canonical_type: "memory/state",
     tags: ["agents"], source_url: null, source_note: "From the group", discovered_at: new Date("2026-05-01"),

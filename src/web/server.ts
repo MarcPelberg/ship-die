@@ -35,6 +35,7 @@ export type AdminStatusDb = {
 const db = createDb();
 export const app = new Hono();
 app.route("/join", joinRoutes(db));
+app.on("GET", ["/bravos", "/bravos/"], c => c.redirect("https://marcpelberg.com/bravos/", 302));
 const publicColumns = "slug, title, summary, canonical_type, tags, source_url, source_note, discovered_at, published_at";
 
 app.get("/archive.css", c => c.body(archiveStyles, 200, { "Content-Type": "text/css; charset=utf-8" }));
