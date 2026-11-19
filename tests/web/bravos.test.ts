@@ -1,10 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { load } from "cheerio";
 import { bravosRoutes } from "../../src/web/bravos.js";
 
 const documentPath = "/bravos/data/00112233445566778899aabbccddeeff/00000000-0000-4000-8000-000000000001.bin";
 
 describe("BRAVOS directory assets", () => {
   afterEach(() => vi.restoreAllMocks());
+
+  it("keeps just the search field and clear control in the sticky part of the participant list", async () => {
+    const $ = load(await (await bravosRoutes.request("/bravos")).text());
+    const bar = $("#members > .search-panel");
+    expect(bar.is('[role="search"]')).toBe(true);
+    expect(bar.find("input, button").map((_, control) => control.attribs.id).get())
+      .toEqual(["profile-search", "clear-search"]);
+    expect(bar.siblings("#profiles").length).toBe(1);
+    const css = await (await bravosRoutes.request("/bravos/guide.css")).text();
+    expect(css).toMatch(/\.search-panel\s*\{[^}]*position:\s*sticky\b/);
+  });
 
   it.each([
     ["/bravos/guide.css", "text/css"],
@@ -18,7 +30,7 @@ describe("BRAVOS directory assets", () => {
     expect(upstream).not.toHaveBeenCalled();
   });
 
-  it.each(["directory", "crypto"])("fetches the fixed canonical %s module without forwarding visitor information", async name => {
+  it.each([["directory", "3"], ["crypto", "2"]])("fetches the fixed canonical %s module without forwarding visitor information", async (name, version) => {
     const upstream = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("export {};", {
       headers: { "Content-Type": "application/javascript; charset=UTF-8", "Set-Cookie": "ignored=1", "X-Origin": "private" }
     }));
@@ -26,7 +38,7 @@ describe("BRAVOS directory assets", () => {
       headers: { Authorization: "Bearer visitor", Cookie: "client=visitor" }
     });
     const [url, options] = upstream.mock.calls[0];
-    expect(url).toBe("https://marcpelberg.com/bravos/" + name + ".js?v=2");
+    expect(url).toBe("https://marcpelberg.com/bravos/" + name + ".js?v=" + version);
     expect(options).toMatchObject({ credentials: "omit", redirect: "error" });
     expect(options?.headers).toBeUndefined();
     expect(response.headers.has("set-cookie")).toBe(false);

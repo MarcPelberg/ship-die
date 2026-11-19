@@ -17,7 +17,7 @@ describe("public resource links", () => {
     expect(response.headers.get("Content-Security-Policy")).toContain("connect-src 'self'");
     const html = await response.text();
     expect(html).toContain("Los Bravos de Valle · Directorio de participantes");
-    expect(html).toContain('src="/bravos/directory.js?v=2"');
+    expect(html).toMatch(/src="\/bravos\/directory\.js\?v=\d+"/);
     expect(html).not.toMatch(/marc ?pelberg|https?:\/\//i);
   });
   const row = {

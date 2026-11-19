@@ -9,7 +9,7 @@
   <title>Los Bravos de Valle · Directorio de participantes</title>
   <link rel="icon" href="/bravos/crest.webp" type="image/webp">
   <link rel="stylesheet" href="/bravos/guide.css">
-  <script type="module" src="/bravos/directory.js?v=2"></script>
+  <script type="module" src="/bravos/directory.js?v=3"></script>
 </head>
 <body>
   <a class="skip" href="#directorio">Ir al directorio</a>
@@ -38,17 +38,17 @@
     <noscript>Activa JavaScript para abrir el directorio con la contraseña del grupo.</noscript>
     <p id="notice" role="status"></p>
     <section id="members" hidden aria-label="Directorio de participantes">
+      <div class="search-heading">
+        <label for="profile-search">Buscar personas</label>
+        <button id="lock" type="button" hidden disabled>Cerrar directorio</button>
+      </div>
       <div class="search-panel" role="search" aria-label="Buscar en el directorio">
-        <div class="search-heading">
-          <label for="profile-search">Buscar personas</label>
-          <button id="lock" type="button" hidden disabled>Cerrar directorio</button>
-        </div>
         <div class="field search-field">
           <input id="profile-search" type="search" placeholder="Nombre, profesión o especialidad" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" aria-controls="profiles">
           <button id="clear-search" type="button" aria-label="Borrar búsqueda" title="Borrar búsqueda" hidden disabled>Borrar</button>
         </div>
-        <div id="suggestions" role="group" aria-label="Especialidades frecuentes" hidden></div>
       </div>
+      <div id="suggestions" role="group" aria-label="Especialidades frecuentes" hidden></div>
       <h2 id="count" aria-live="polite" aria-atomic="true"></h2>
       <ul id="profiles" aria-labelledby="count"></ul>
       <div id="empty" hidden>

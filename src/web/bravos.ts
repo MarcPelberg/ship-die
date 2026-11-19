@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { Hono } from "hono";
 
 const origin = "https://marcpelberg.com";
-const modules = new Set(["/bravos/directory.js", "/bravos/crypto.js"]);
+const modules = new Map([["/bravos/directory.js", "?v=3"], ["/bravos/crypto.js", "?v=2"]]);
 const packet = /^\/bravos\/data\/(?:index\.bin|[0-9a-f]{32}\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.bin)$/;
 const assets = new Map([
   ["/bravos", ["bravos.html", "text/html; charset=utf-8"]],
@@ -33,7 +33,7 @@ bravosRoutes.on("GET", ["/bravos", "/bravos/*"], async c => {
   if (!script && !packet.test(url.pathname)) return c.notFound();
   const type = script ? "application/javascript" : "application/octet-stream";
   try {
-    const response = await fetch(origin + url.pathname + (script ? "?v=2" : ""), {
+    const response = await fetch(origin + url.pathname + (modules.get(url.pathname) ?? ""), {
       redirect: "error", credentials: "omit",
       signal: AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(45000)])
     });
