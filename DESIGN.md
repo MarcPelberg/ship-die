@@ -98,7 +98,7 @@ Topic counts follow the search across all categories. Active topic, query and pa
 
 Every resource has a permanent entry URL using its stored slug. The index keeps source links on titles and includes a separate permalink. The entry view repeats the same date, topic, summary and tags, with a link back to the index.
 
-The masthead links to the WhatsApp group's join request. The form describes organizer review and collects a name, international WhatsApp number and background. The confirmation shows a receipt. Invalid fields retain their values and reference specific correction text. The first invalid field receives focus.
+The homepage introduces the WhatsApp group, places its join request directly beneath the introduction, and explains what visitors can find in the public index. The masthead links to the request on the other pages. The form describes organizer review and collects a name, international WhatsApp number and background. The confirmation shows a receipt. Invalid fields retain their values and reference specific correction text. The first invalid field receives focus.
 
 ## Do's and Don'ts
 

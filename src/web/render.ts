@@ -91,7 +91,10 @@ export function renderHome(input: RenderHomeInput): string {
     ? `${number.format((page - 1) * PAGE_SIZE + 1)}–${number.format(Math.min(page * PAGE_SIZE, total))} of ${number.format(total)} resources`
     : `${number.format(total)} resource${total === 1 ? "" : "s"}`;
   return renderPage(title, `
-  <div class="intro"><div><h1>Resource index</h1><p>Tools, models, and workflows shared in the <strong>/Ship!=Die</strong> builder group.</p></div>
+  <div class="intro"><div class="group-intro"><h1>AI Ship or Die</h1>
+    <p>We’re a WhatsApp group for people building with AI. Members share projects they’ve shipped and compare notes on everything from coding agents to video editing workflows.</p>
+    <a class="intro-join submit" href="/join">Request to join the WhatsApp group</a>
+    <p>Anyone can search this public resource index. Browse tools, models, and workflows from the group’s discussions, with short summaries and links to the original sources where available.</p></div>
     <div class="index-mark" aria-hidden="true"><i></i><i></i><i><b>!=</b></i></div>
   </div>
   <form id="search" action="/" method="get" role="search" novalidate>
@@ -111,7 +114,7 @@ export function renderHome(input: RenderHomeInput): string {
       ${list}
       ${pages > 1 ? `<nav class="pages" aria-label="Result pages">${page > 1 ? pager(page - 1, "← Previous") : ""}<span>Page ${number.format(page)} of ${number.format(pages)}</span>${page < pages ? pager(page + 1, "Next →") : ""}</nav>` : ""}
     </section>
-  </div>`, "index");
+  </div>`, "index", "Browse tools, models, and workflows shared by AI builders in the Ship != Die WhatsApp group, or request to join the conversation.");
 }
 
 function renderPage(title: string, content: string, view: "index" | "entry" | "join", description = "Search tools, models, and workflows shared in the /Ship!=Die builder group."): string {
@@ -126,7 +129,7 @@ function renderPage(title: string, content: string, view: "index" | "entry" | "j
 <body><a class="skip" href="#${target}">Skip to ${destination}</a>
 <header class="mast"><div class="frame mast-inner">
   <a class="brand" href="/" aria-label="Ship != Die home"><span class="mark" aria-hidden="true">!=</span>Ship != Die</a>
-  <nav class="mast-links" aria-label="Site navigation"><a class="join-link" href="/join"${view === "join" ? ' aria-current="page"' : ""}>Request to join</a>
+  <nav class="mast-links" aria-label="Site navigation">${view !== "index" ? `<a class="join-link" href="/join"${view === "join" ? ' aria-current="page"' : ""}>Request to join</a>` : ""}
   <a class="repo" href="https://github.com/MarcPelberg/ship-die">GitHub <span aria-hidden="true">↗</span></a></nav>
 </div></header><main class="frame">${content}</main></body></html>`;
 }

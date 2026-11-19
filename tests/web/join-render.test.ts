@@ -5,7 +5,10 @@ import { renderHome, renderJoin } from "../../src/web/render.js";
 describe("request-to-join form", () => {
   it("links from the archive and labels all three visible application fields", () => {
     const archive = load(renderHome({ query: "", type: "", cards: [] }));
-    expect(archive('header a[href="/join"]').text()).toBe("Request to join");
+    expect(archive('a[href="/join"]')).toHaveLength(1);
+    expect(archive('.intro a[href="/join"]').text()).toBe("Request to join the WhatsApp group");
+    expect(archive(".intro").text()).toContain("projects they’ve shipped");
+    expect(archive(".intro").text()).toContain("Anyone can search this public resource index");
     const $ = load(renderJoin());
     expect($("form").attr("method")).toBe("post");
     expect($("form").attr("action")).toBe("/join");

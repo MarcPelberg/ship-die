@@ -44,6 +44,9 @@ h1,h2,h3,p { margin: 0; }
 h1,h2,h3 { font-family: var(--display); }
 h1 { font-size: clamp(2.35rem,5.1vw,4rem); letter-spacing: -.065em; line-height: 1.04; }
 .intro p { margin-top: .7rem; color: var(--muted); font-size: 1rem; }
+.group-intro { max-width: 65ch; }
+.intro-join { display: inline-flex; align-items: center; margin: 1.05rem 0 .25rem; border-radius: var(--radius); text-decoration: none; }
+.intro-join:hover { text-decoration: none; }
 .intro strong { color: var(--ink); font: 600 .96em var(--code); }
 .index-mark { position: relative; width: 6.8rem; height: 4.3rem; flex: none; margin-right: .75rem; }
 .index-mark i { position: absolute; width: 4.15rem; height: 2.9rem; border: 1.5px solid var(--deep); border-radius: .18rem; background: var(--signal); transform: rotate(-13deg); left: .3rem; top: .94rem; }

@@ -10,10 +10,15 @@ describe("public resource links", () => {
     vi.stubEnv("ADMIN_TOKEN", "test-token");
     ({ app } = await import("../../src/web/server.js"));
   });
-  it.each(["/bravos", "/bravos/"])("redirects %s to the protected Bravos directory", async path => {
+  it.each(["/bravos", "/bravos/"])("serves the event directory on %s", async path => {
     const response = await app.request(path);
-    expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe("https://marcpelberg.com/bravos/");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Location")).toBeNull();
+    expect(response.headers.get("Content-Security-Policy")).toContain("connect-src 'self'");
+    const html = await response.text();
+    expect(html).toContain("Los Bravos de Valle · Directorio de participantes");
+    expect(html).toContain('src="/bravos/directory.js?v=2"');
+    expect(html).not.toMatch(/marc ?pelberg|https?:\/\//i);
   });
   const row = {
     slug: "memory-note-a143", title: "Memory & state", summary: "Practical notes.", canonical_type: "memory/state",

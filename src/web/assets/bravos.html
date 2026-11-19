@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es-MX" translate="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#193b32">
+  <title>Los Bravos de Valle · Directorio de participantes</title>
+  <link rel="icon" href="/bravos/crest.webp" type="image/webp">
+  <link rel="stylesheet" href="/bravos/guide.css">
+  <script type="module" src="/bravos/directory.js?v=2"></script>
+</head>
+<body>
+  <a class="skip" href="#directorio">Ir al directorio</a>
+  <header class="cover">
+    <div class="cover-inner frame">
+      <div>
+        <p class="kicker">Directorio de participantes</p>
+        <h1>Los Bravos <em>de Valle</em></h1>
+      </div>
+      <img class="crest" src="/bravos/crest.webp" width="388" height="326" alt="">
+    </div>
+  </header>
+  <main id="directorio" class="frame" tabindex="-1">
+    <form id="gate" method="post" novalidate>
+      <h2>Acceso al directorio</h2>
+      <p class="intro">Encuentra a los Bravos por su nombre, profesión o especialidad y descarga sus fichas.</p>
+      <label for="password">Contraseña del grupo</label>
+      <div class="entry">
+        <div class="field">
+          <input id="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" required aria-describedby="notice">
+          <button id="toggle-password" type="button" aria-label="Mostrar contraseña" aria-pressed="false" aria-controls="password" disabled>Mostrar</button>
+        </div>
+        <button class="primary" type="submit">Abrir directorio</button>
+      </div>
+    </form>
+    <noscript>Activa JavaScript para abrir el directorio con la contraseña del grupo.</noscript>
+    <p id="notice" role="status"></p>
+    <section id="members" hidden aria-label="Directorio de participantes">
+      <div class="search-panel" role="search" aria-label="Buscar en el directorio">
+        <div class="search-heading">
+          <label for="profile-search">Buscar personas</label>
+          <button id="lock" type="button" hidden disabled>Cerrar directorio</button>
+        </div>
+        <div class="field search-field">
+          <input id="profile-search" type="search" placeholder="Nombre, profesión o especialidad" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" aria-controls="profiles">
+          <button id="clear-search" type="button" aria-label="Borrar búsqueda" title="Borrar búsqueda" hidden disabled>Borrar</button>
+        </div>
+        <div id="suggestions" role="group" aria-label="Especialidades frecuentes" hidden></div>
+      </div>
+      <h2 id="count" aria-live="polite" aria-atomic="true"></h2>
+      <ul id="profiles" aria-labelledby="count"></ul>
+      <div id="empty" hidden>
+        <h3>Sin coincidencias</h3>
+        <p>Prueba con otro nombre o una especialidad más amplia.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
