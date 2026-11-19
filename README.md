@@ -6,9 +6,22 @@ Browse the archive at [aishipdie.com](https://aishipdie.com/). Links using `www.
 
 ### Historical coverage checked on November 18, 2026
 
-WhatsApp reports that the group was created on April 29, 2026. The archive has selected resources from excerpts shared on April 29 and May 7. The supplied text and Markdown exports both cover September 16 through November 17. They contain the same 97 entries on 18 dates. Five images and one document appear as placeholders.
+The November 18 WhatsApp ZIP starts with the group's April 29 creation notice and ends on November 18. It contains **281 dated entries on 36 days**, including system notices, plus seven images and one Markdown attachment. All 97 entries in the earlier September–November exports match entries in the ZIP. The original April and May excerpts also match its substantive discussions and shared links.
 
-The available sources leave May 8 through September 15 unverified. The later export also has no entries dated October 15 through November 8. An export from a long-time member with history across those dates would help distinguish quiet periods from missing messages.
+| 2026 | Dated entries |
+| --- | ---: |
+| April | 92 |
+| May | 27 |
+| June | 2 |
+| July | 13 |
+| August | 0 |
+| September | 109 |
+| October | 11 |
+| November through the 18th | 27 |
+
+The ZIP supplies 69 entries on 14 dates between May 8 and September 15. Neither source shows a post between October 15 and November 8. The longest interval without a dated entry is July 17 through September 1. One November 18 entry records a deleted message, whose contents are unavailable. Dates use the local calendar shown in the export.
+
+The public archive presents selected tools, methods, and resources from these discussions. The transcript and original attachments remain private.
 
 ## Local Setup
 

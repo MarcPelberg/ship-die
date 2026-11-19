@@ -1,0 +1,51 @@
+-- Public editorial summaries, dated to the group entry. Shared attachments stay private.
+insert into cards (
+  slug, discovered_at, title, summary, canonical_type, tags, source_url, source_domain, source_note, metadata
+)
+select slug, day::date at time zone 'UTC', title, summary, kind, tags, url, domain, note,
+       '{"source":"group export","curation":"editorial","batch":"2026-11-18-full-export"}'::jsonb
+from (values
+  ('dynamic-software-interfaces', '2026-04-29', 'Dynamic Software Interfaces',
+   'This short video explores how a coding agent could adapt a software interface to the person using it. The group shared it during a discussion of what builders might do with coding agents.',
+   'tool', array['interface design', 'coding agents'], 'https://www.youtube.com/shorts/_2LcG-3zCdY', 'www.youtube.com', 'Dynamic Software Interfaces video'),
+  ('claude-code-goal-command', '2026-05-14', 'Give a Claude Code task a completion condition',
+   'The group asked about the /goal command. Anthropic documents how to supply a condition, inspect the active goal, and clear it. This is useful when a coding task has a result the agent can check across turns.',
+   'tool', array['Claude Code', 'goals', 'verification'], 'https://code.claude.com/docs/en/commands', 'code.claude.com', 'Claude Code command reference'),
+  ('claude-coding-workflow-video', '2026-05-16', 'A Claude coding walkthrough and guide to managed agents',
+   'The group shared a short coding video featuring a member of Anthropic’s technical staff. The public post also links to a guide covering Claude Managed Agents, runtime costs, and deployment examples.',
+   'skill/workflow pack', array['Claude', 'coding', 'video'], 'https://substack.com/@linas/note/c-256743646', 'substack.com', 'Public video post'),
+  ('adspirer-advertising-mcp', '2026-05-25', 'Adspirer connects ad platforms to an assistant',
+   'Adspirer exposes paid-advertising tools through MCP. The group shared it while looking for ways to work on campaigns from an AI assistant and asked for firsthand experience.',
+   'tool', array['advertising', 'MCP', 'campaign management'], 'https://www.adspirer.com/', 'www.adspirer.com', 'Adspirer website'),
+  ('ryze-ai-ad-management', '2026-05-25', 'Ryze AI for managing ad campaigns',
+   'Ryze was another option the group identified for AI-assisted campaign management. Its public product page describes support for Google and Meta ads. The discussion supplied no campaign results.',
+   'tool', array['advertising', 'campaign management', 'Ryze'], 'https://www.get-ryze.ai/', 'www.get-ryze.ai', 'Ryze AI website'),
+  ('ponytail-simpler-code', '2026-07-03', 'Ponytail for keeping agent-written code small',
+   'Ponytail is a coding-agent skill that asks whether the requested behavior already exists and whether a standard library can do the job. The group shared it as a way to keep simple tasks from acquiring unnecessary code.',
+   'skill/workflow pack', array['Ponytail', 'coding agents', 'code complexity'], 'https://github.com/DietrichGebert/ponytail', 'github.com', 'Ponytail repository'),
+  ('repository-review-and-deployed-site-qa', '2026-09-02', 'Pair repository review with a check on the deployed site',
+   'A builder described running cloud-based checks on the code, then using a computer for hands-on QA of the deployed site. This gives the team evidence from both the repository and the interface people actually use.',
+   'review/eval', array['code review', 'QA', 'deployment'], null, null, 'Group discussion'),
+  ('voice-led-mobile-admin', '2026-09-02', 'Use voice input for email drafts and Slack catch-up',
+   'One builder described using a phone to draft email replies by voice and ask for summaries of Slack conversations. Those tasks can be completed away from the desktop where project work and visual checks take place.',
+   'skill/workflow pack', array['voice input', 'mobile', 'email', 'Slack'], null, null, 'Group discussion'),
+  ('aqua-voice-dictation', '2026-09-03', 'Aqua Voice for dictation into apps',
+   'Aqua Voice transcribes speech into the application where someone is writing. The group mentioned it while comparing ways to dictate input when typing is inconvenient.',
+   'tool', array['Aqua Voice', 'dictation', 'voice input'], 'https://aquavoice.com/', 'aquavoice.com', 'Aqua Voice website'),
+  ('remote-workstation-mobile-coding', '2026-09-05', 'Keep a coding workspace accessible from a phone',
+   'A builder described connecting a phone to a hosted Windows workstation to make, demonstrate, and approve changes in the same coding applications. Access to the running interface made it possible to inspect the result and refine visual details.',
+   'skill/workflow pack', array['remote desktop', 'Windows', 'mobile', 'coding agents'], null, null, 'Group discussion'),
+  ('compare-call-classifiers', '2026-09-27', 'Score call classifiers on accuracy, empty answers, cost, and latency',
+   'A shared comparison separated labeled calls from test cases and tracked how often each model returned a blank answer. Recording latency and estimated monthly cost alongside those results makes the tradeoffs visible before choosing a model.',
+   'review/eval', array['call classification', 'evaluation', 'latency', 'cost'], null, null, 'Evaluation table shared in the group'),
+  ('test-scheduled-agent-alerts', '2026-10-06', 'Stop a scheduled agent to test its alert',
+   'A shared operations checklist proposes deliberately pausing one scheduled agent and checking that its absence appears in the next exception report. That exercise tests the full path from a missed run to a notice someone can act on.',
+   'infra', array['scheduled agents', 'alerts', 'verification'], null, null, 'Operations checklist shared in the group'),
+  ('validate-pricing-agents-against-sales', '2026-10-06', 'Check an agent’s pricing decisions against later sales',
+   'Save each pricing verdict so it can be matched to the eventual sale and margin. The group’s operations checklist uses that comparison to evaluate decisions after the outcome becomes known.',
+   'review/eval', array['pricing', 'agent evaluation', 'outcomes'], null, null, 'Operations checklist shared in the group'),
+  ('video-editing-with-fable', '2026-11-18', 'Use a folder of raw clips to brief a video-editing agent',
+   'A builder reported giving Fable raw footage through Google Drive and receiving a cut with graphic overlays. A progress screenshot showed the agent trimming clips and rendering a draft. The finished video was not included in the export.',
+   'skill/workflow pack', array['Fable', 'video editing', 'Google Drive'], null, null, 'Group discussion and progress screenshot')
+) as digest(slug, day, title, summary, kind, tags, url, domain, note)
+on conflict (slug) do nothing;
