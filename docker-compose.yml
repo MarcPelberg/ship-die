@@ -38,6 +38,18 @@ services:
         condition: service_healthy
     command: sh -c "while true; do node dist/src/worker/run-once.js; sleep 60; done"
 
+  join-notifier:
+    build: .
+    profiles: ["join-notifications"]
+    restart: unless-stopped
+    env_file:
+      - path: .env.join-notifier
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "while true; do node dist/src/worker/notify-joins.js; sleep 15; done"
+
   curator:
     image: ollama/ollama:0.40.16
     profiles: ["local-curation"]

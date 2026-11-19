@@ -158,6 +158,19 @@ Copy backups off the OVH server regularly and verify restore procedures before r
 
 ## Review private group requests
 
+New applications queue an email to `marc@realarb.com` when the form saves a new WhatsApp number. The `join-notifier` Compose service checks the queue every 15 seconds. AWS SES sends from `join-requests@realarb.com` in `us-east-1`. Entries submitted before migration 010 retain their original state, and a repeat submission keeps the existing application.
+
+On the Compose host, stage `/opt/ship-die/.env.join-notifier` with owner-only mode `0600`. It holds `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `JOIN_NOTIFY_FROM` and `JOIN_NOTIFY_TO`. Use the dedicated SES identity limited to the sender and recipient above. The provisioning command adds a separate database URL with permission to read application details and update delivery status. Only the notifier loads this file.
+
+```sh
+cd /opt/ship-die
+docker compose build app join-notifier
+docker compose run --rm --no-deps app node dist/scripts/migrate.js
+bash scripts/provision-join-notifier-db.sh
+docker compose up -d --no-build --no-deps join-notifier
+docker compose --profile join-notifications ps join-notifier
+```
+
 On the OVH server, use the following read-only query from a private terminal to review the latest 25 applications. The form stores one request per WhatsApp number. A repeat submission preserves the original application. An organizer reviews requests and handles invitations separately.
 
 ```sh
